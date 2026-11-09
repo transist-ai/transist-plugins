@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["issues", "count"],
+  "allOf": [
+    {"$ref": "compact.schema.json#/$defs/mode"},
+    {
+      "if": {"required": ["output_mode"]},
+      "then": {"required": ["next_page_token", "is_last"]}
+    }
+  ],
+  "properties": {
+    "output_mode": {"const": "compact"},
+    "diagnostics": {"$ref": "compact.schema.json#/$defs/diagnostics"},
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "summary", "status", "url"],
+        "properties": {
+          "key": { "type": "string" },
+          "summary": { "type": "string" },
+          "status": { "type": "string" },
+          "url": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "count": { "type": "integer" },
+    "next_page_token": { "type": "string" },
+    "is_last": { "type": "boolean" },
+    "raw": { "type": "object" }
+  },
+  "additionalProperties": false
+}

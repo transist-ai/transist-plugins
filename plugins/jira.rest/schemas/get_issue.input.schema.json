@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["issue_key"],
+  "properties": {
+    "output_mode": {"enum": ["legacy", "compact"], "default": "legacy"},
+    "max_response_bytes": {"type": "integer", "minimum": 1, "default": 5242880},
+    "max_diagnostic_bytes": {"type": "integer", "minimum": 1, "maximum": 262144},
+    "issue_key": { "type": "string", "minLength": 1 },
+    "site_url": { "type": "string" },
+    "fields": { "type": "array", "items": { "type": "string" } },
+    "include_attachments": { "type": "boolean" },
+    "output_file": { "type": "string", "description": "Optional normalized issue JSON destination, including a runtime-staged absolute document path." },
+    "secret_refs": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

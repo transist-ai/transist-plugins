@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["ok", "comments", "count", "pull_request"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "count": {"type": "integer", "minimum": 0},
+    "pull_request": {"type": "object"},
+    "comments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "source", "body"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "source": {"enum": ["pr_conversation", "review_thread"]},
+          "body": {"type": "string"},
+          "author": {"type": "string"},
+          "path": {"type": "string"},
+          "url": {"type": "string"},
+          "created_at": {"type": "string"},
+          "outdated": {"type": "boolean"},
+          "thread_id": {"type": "string"},
+          "review_comment_id": {"type": "string"},
+          "line": {"type": ["integer", "null"]},
+          "original_line": {"type": ["integer", "null"]},
+          "side": {"type": ["string", "null"]},
+          "start_line": {"type": ["integer", "null"]},
+          "diff_hunk_header": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "output_mode": {"const": "compact"},
+    "diagnostics": {"$ref": "compact.schema.json#/$defs/diagnostics"}
+  },
+  "allOf": [{"if": {"required": ["output_mode"]}, "then": {"required": ["diagnostics"]}, "else": {"not": {"required": ["diagnostics"]}}}],
+  "additionalProperties": false
+}

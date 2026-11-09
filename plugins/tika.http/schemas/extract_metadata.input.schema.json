@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object", "additionalProperties": false,
+  "required": ["document_base64", "content_type"],
+  "properties": {
+    "document_base64": {"type": "string", "minLength": 4, "maxLength": 6990508, "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"},
+    "content_type": {"enum": ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"]}
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["ok", "count", "has_comments"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "count": {"type": "integer", "minimum": 0},
+    "has_comments": {"type": "boolean"},
+    "output_mode": {"const": "compact"},
+    "diagnostics": {"$ref": "compact.schema.json#/$defs/diagnostics"}
+  },
+  "allOf": [{"if": {"required": ["output_mode"]}, "then": {"required": ["diagnostics"]}, "else": {"not": {"required": ["diagnostics"]}}}],
+  "additionalProperties": false
+}

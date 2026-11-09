@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["jira_issue_file", "output_dir"],
+  "properties": {
+    "output_mode": {"enum": ["legacy", "compact"], "default": "legacy"},
+    "max_diagnostic_bytes": {"type": "integer", "minimum": 1, "maximum": 262144},
+    "site_url": { "type": "string" },
+    "jira_issue_file": { "type": "string", "minLength": 1 },
+    "output_dir": { "type": "string", "minLength": 1 },
+    "manifest_file": { "type": "string", "minLength": 1, "description": "Manifest inside output_dir; defaults to output_dir/manifest.json. Members are relative to the manifest parent." },
+    "allowed_extensions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Allowed attachment filename extensions (case-insensitive, with or without leading dot). Empty array disables the extension filter."
+    },
+    "allowed_mime_prefixes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Allowed attachment MIME-type prefixes (case-insensitive). Empty array disables the mime filter. An attachment passes when either the extension filter or the mime filter accepts it (OR semantics)."
+    },
+    "max_bytes": { "type": "integer", "minimum": 0 },
+    "secret_refs": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

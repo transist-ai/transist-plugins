@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "ok",
+    "generated_at",
+    "count",
+    "posted_count",
+    "skipped_count",
+    "resolved_count",
+    "resolution_errors",
+    "responses",
+    "exit_code"
+  ],
+  "properties": {
+    "output_mode": {"const": "compact"},
+    "diagnostics": {"$ref": "compact.schema.json#/$defs/diagnostics"},
+    "ok": { "type": "boolean" },
+    "generated_at": { "type": "string" },
+    "count": { "type": "integer" },
+    "posted_count": { "type": "integer" },
+    "skipped_count": { "type": "integer" },
+    "resolved_count": { "type": "integer" },
+    "resolution_errors": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "responses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["comment_id", "source", "status"],
+        "properties": {
+          "comment_id": { "type": "string" },
+          "source": { "type": "string" },
+          "status": { "type": "string", "enum": ["posted", "skipped"] },
+          "reason": { "type": "string" },
+          "delivery_mode": { "type": "string" },
+          "posted_url": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "stdout": { "type": "string" },
+    "stderr": { "type": "string" },
+    "exit_code": { "type": "integer" }
+  },
+  "allOf": [{"$ref": "compact.schema.json#/$defs/mode"}],
+  "additionalProperties": false
+}

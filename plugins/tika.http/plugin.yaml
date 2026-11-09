@@ -1,0 +1,39 @@
+schema: transist.plugin.v1
+id: tika.http
+version: 0.1.0
+adapter: http
+default_provider_kind: external
+entrypoint:
+  type: http
+  base_url: https://tika.example.invalid
+package:
+  files:
+    - service.py
+    - requirements.lock
+    - Dockerfile
+    - schemas/extract_text.input.schema.json
+    - schemas/extract_text.output.schema.json
+    - schemas/extract_metadata.input.schema.json
+    - schemas/extract_metadata.output.schema.json
+actions:
+  - name: extract_text
+    input_schema: schemas/extract_text.input.schema.json
+    output_schema: schemas/extract_text.output.schema.json
+    secret_inputs:
+      - name: TIKA_AUTHORIZATION
+        required: true
+        binding: {type: header, name: Authorization}
+    bindings: {input_projection: action_data_v1}
+  - name: extract_metadata
+    input_schema: schemas/extract_metadata.input.schema.json
+    output_schema: schemas/extract_metadata.output.schema.json
+    secret_inputs:
+      - name: TIKA_AUTHORIZATION
+        required: true
+        binding: {type: header, name: Authorization}
+    bindings: {input_projection: action_data_v1}
+capabilities:
+  supports_cancel: false
+  supports_health: true
+  supports_artifact_hints: false
+  supports_evidence_hints: false

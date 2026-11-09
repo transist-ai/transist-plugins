@@ -1,0 +1,63 @@
+services:
+  provision:
+    build:
+      context: .
+      target: server
+    command: [python, provision.py]
+    environment:
+      HF_HUB_OFFLINE: "0"
+    volumes:
+      - assets:/assets
+    networks: [provision]
+  tika:
+    image: apache/tika:3.3.0.0@sha256:2a565f1ea1290bdcb74a7d35957d16a989ed44ef98790dcdcc28121d728fa583
+    networks: [private]
+  qdrant:
+    image: qdrant/qdrant:v1.16.1@sha256:db1c735496dfa982ef27576a17b624e48e6b46a140bcdc2ac34e39d186204ef5
+    command: [./qdrant, --config-path, /assets/qdrant.yaml]
+    volumes:
+      - assets:/assets:ro
+      - database:/qdrant/storage
+    networks: [private]
+  gateway:
+    build:
+      context: .
+      target: server
+    volumes:
+      - assets:/assets:ro
+    networks: [private]
+    ports:
+      - "127.0.0.1::8443"
+    depends_on: [tika, qdrant]
+  seed:
+    build:
+      context: .
+      target: server
+    command: [python, seed.py]
+    volumes:
+      - assets:/assets:ro
+    networks: [private]
+  offline:
+    build:
+      context: .
+      target: server
+    command: [python, offline.py]
+    volumes:
+      - assets:/assets:ro
+    network_mode: none
+  probe:
+    build:
+      context: .
+      target: client
+    volumes:
+      - assets:/assets:ro
+      - evidence:/evidence
+    networks: [private]
+networks:
+  private:
+    internal: true
+  provision: {}
+volumes:
+  assets: {}
+  database: {}
+  evidence: {}

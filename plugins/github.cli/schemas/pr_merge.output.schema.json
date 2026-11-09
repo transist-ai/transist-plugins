@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "ok",
+    "pull_request",
+    "merged",
+    "already_merged",
+    "remote_branch_deleted",
+    "method",
+    "exit_code"
+  ],
+  "properties": {
+    "output_mode": {"const": "compact"},
+    "diagnostics": {"$ref": "compact.schema.json#/$defs/diagnostics"},
+    "ok": { "type": "boolean" },
+    "pull_request": { "type": "object" },
+    "merged": { "type": "boolean" },
+    "already_merged": { "type": "boolean" },
+    "remote_branch_deleted": { "type": "boolean" },
+    "method": { "type": "string" },
+    "stdout": { "type": "string" },
+    "stderr": { "type": "string" },
+    "exit_code": { "type": "integer" }
+  },
+  "allOf": [{"$ref": "compact.schema.json#/$defs/mode"}],
+  "additionalProperties": false
+}

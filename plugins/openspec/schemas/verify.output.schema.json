@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "ok",
+    "passed",
+    "backend",
+    "effective_change_name",
+    "report_text",
+    "report_file",
+    "findings_count",
+    "approved_plan_dir",
+    "validation_change_dir",
+    "exit_code"
+  ],
+  "properties": {
+    "output_mode": { "enum": ["legacy", "compact"] },
+    "diagnostics": { "$ref": "diagnostics.schema.json" },
+    "findings": { "type": "array" },
+    "ok": { "type": "boolean" },
+    "passed": { "type": "boolean" },
+    "backend": { "type": "string" },
+    "effective_change_name": { "type": "string" },
+    "report_text": { "type": "string" },
+    "report_file": { "type": "string" },
+    "findings_count": { "type": "integer", "minimum": 0 },
+    "approved_plan_dir": { "type": "string" },
+    "validation_change_dir": { "type": "string" },
+    "stdout": { "type": "string" },
+    "stderr": { "type": "string" },
+    "exit_code": { "type": "integer" }
+  },
+  "additionalProperties": false,
+  "allOf": [{
+    "if": { "required": ["output_mode"], "properties": { "output_mode": { "const": "compact" } } },
+    "then": { "required": ["diagnostics", "findings"], "not": { "anyOf": [{"required": ["stdout"]}, {"required": ["stderr"]}] } },
+    "else": { "required": ["stdout", "stderr"], "not": { "anyOf": [{"required": ["diagnostics"]}, {"required": ["findings"]}] } }
+  }]
+}

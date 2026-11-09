@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["bytes", "chars", "lines", "sha256"],
+  "properties": {
+    "bytes": {"type": "integer", "minimum": 0, "maximum": 4096},
+    "chars": {"type": "integer", "minimum": 0, "maximum": 4096},
+    "lines": {"type": "integer", "minimum": 0, "maximum": 4097},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

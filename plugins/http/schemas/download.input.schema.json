@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "method": {
+      "type": "string",
+      "enum": ["GET", "POST"]
+    },
+    "url": {
+      "type": "string"
+    },
+    "headers": {
+      "type": "object"
+    },
+    "query": {
+      "type": "object"
+    },
+    "secret_headers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["secret", "header"],
+        "properties": {
+          "secret": { "type": "string" },
+          "header": { "type": "string" },
+          "format": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "dest": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Workspace-relative durable file path or invocation-local run:// scratch path."
+    },
+    "max_bytes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 26214400
+    },
+    "sha256": {
+      "type": "string"
+    },
+    "timeout_ms": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 120000
+    },
+    "secret_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["url", "dest"],
+  "additionalProperties": false
+}

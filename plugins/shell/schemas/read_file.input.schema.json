@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["path"],
+  "properties": {
+    "path": {"type": "string", "minLength": 1, "description": "Regular workspace file; relative or contained absolute, no traversal or symlinks."},
+    "max_bytes": {"type": "integer", "minimum": 1, "maximum": 1048576, "default": 65536},
+    "output_file": {"type": "string", "minLength": 1, "description": "Optional file data destination including a runtime-staged absolute document path."},
+    "output_mode": {"enum": ["legacy", "compact"], "default": "legacy"}
+  },
+  "additionalProperties": false
+}

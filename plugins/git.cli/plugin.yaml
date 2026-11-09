@@ -1,0 +1,129 @@
+schema: transist.plugin.v1
+id: git.cli
+version: 0.1.0
+adapter: process
+entrypoint:
+  type: process
+  command: plugin.py
+prerequisites:
+  binaries:
+    - name: python3
+    - name: git
+package:
+  files:
+    - plugin.py
+    - git_output.py
+    - instruction_comments.py
+    - process_lifecycle.py
+    - process_runner.py
+    - schemas/compact.schema.json
+    - schemas/current_branch.input.schema.json
+    - schemas/current_branch.output.schema.json
+    - schemas/list_branches.input.schema.json
+    - schemas/list_branches.output.schema.json
+    - schemas/create_branch.input.schema.json
+    - schemas/create_branch.output.schema.json
+    - schemas/checkout_branch.input.schema.json
+    - schemas/checkout_branch.output.schema.json
+    - schemas/ensure_branch.input.schema.json
+    - schemas/ensure_branch.output.schema.json
+    - schemas/commit_worktree.input.schema.json
+    - schemas/commit_worktree.output.schema.json
+    - schemas/push_current_branch.input.schema.json
+    - schemas/push_current_branch.output.schema.json
+    - schemas/pull_current_branch.input.schema.json
+    - schemas/pull_current_branch.output.schema.json
+    - schemas/sync_branch_from_pr.input.schema.json
+    - schemas/sync_branch_from_pr.output.schema.json
+    - schemas/delete_branch.input.schema.json
+    - schemas/delete_branch.output.schema.json
+    - schemas/worktree_add.input.schema.json
+    - schemas/worktree_add.output.schema.json
+    - schemas/worktree_remove.input.schema.json
+    - schemas/worktree_remove.output.schema.json
+    - schemas/scan_instruction_comments.input.schema.json
+    - schemas/scan_instruction_comments.output.schema.json
+actions:
+  - name: scan_instruction_comments
+    input_schema: schemas/scan_instruction_comments.input.schema.json
+    output_schema: schemas/scan_instruction_comments.output.schema.json
+    provider_kind: local
+    secret_inputs: []
+    bindings: {}
+  - name: current_branch
+    input_schema: schemas/current_branch.input.schema.json
+    output_schema: schemas/current_branch.output.schema.json
+    provider_kind: local
+    secret_inputs: []
+    bindings: {}
+  - name: list_branches
+    input_schema: schemas/list_branches.input.schema.json
+    output_schema: schemas/list_branches.output.schema.json
+    provider_kind: local
+    secret_inputs: []
+    bindings: {}
+  - name: create_branch
+    input_schema: schemas/create_branch.input.schema.json
+    output_schema: schemas/create_branch.output.schema.json
+    provider_kind: local
+    secret_inputs: []
+    bindings: {}
+  - name: checkout_branch
+    input_schema: schemas/checkout_branch.input.schema.json
+    output_schema: schemas/checkout_branch.output.schema.json
+    provider_kind: local
+    secret_inputs: []
+    bindings: {}
+  - name: ensure_branch
+    input_schema: schemas/ensure_branch.input.schema.json
+    output_schema: schemas/ensure_branch.output.schema.json
+    provider_kind: local
+    secret_inputs: []
+    bindings: {}
+  - name: commit_worktree
+    input_schema: schemas/commit_worktree.input.schema.json
+    output_schema: schemas/commit_worktree.output.schema.json
+    provider_kind: local
+    secret_inputs: []
+    bindings: {}
+  - name: push_current_branch
+    input_schema: schemas/push_current_branch.input.schema.json
+    output_schema: schemas/push_current_branch.output.schema.json
+    provider_kind: external
+    secret_inputs: []
+    bindings: {}
+  - name: pull_current_branch
+    input_schema: schemas/pull_current_branch.input.schema.json
+    output_schema: schemas/pull_current_branch.output.schema.json
+    provider_kind: external
+    secret_inputs: []
+    bindings: {}
+  - name: sync_branch_from_pr
+    input_schema: schemas/sync_branch_from_pr.input.schema.json
+    output_schema: schemas/sync_branch_from_pr.output.schema.json
+    provider_kind: external
+    secret_inputs: []
+    bindings: {}
+  - name: delete_branch
+    input_schema: schemas/delete_branch.input.schema.json
+    output_schema: schemas/delete_branch.output.schema.json
+    provider_kind: local
+    secret_inputs: []
+    bindings: {}
+  - name: worktree_add
+    input_schema: schemas/worktree_add.input.schema.json
+    output_schema: schemas/worktree_add.output.schema.json
+    provider_kind: local
+    secret_inputs: []
+    bindings: {}
+  - name: worktree_remove
+    input_schema: schemas/worktree_remove.input.schema.json
+    output_schema: schemas/worktree_remove.output.schema.json
+    provider_kind: local
+    secret_inputs: []
+    bindings: {}
+capabilities:
+  supports_cancel: true
+  supports_health: false
+  supports_artifact_hints: true
+  supports_evidence_hints: false

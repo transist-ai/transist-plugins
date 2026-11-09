@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["change_name"],
+  "properties": {
+    "output_mode": { "type": "string", "enum": ["legacy", "compact"], "default": "legacy" },
+    "max_prompt_bytes": { "type": "integer", "minimum": 1 },
+    "max_context_file_bytes": { "type": "integer", "minimum": 1 },
+    "change_name": { "type": "string", "minLength": 1 },
+    "prompt": { "type": "string", "minLength": 1 },
+    "prompt_file": { "type": "string", "minLength": 1 },
+    "context_files": { "type": "array", "items": { "type": "string" }, "description": "Regular UTF-8 file data, including runtime-staged absolute document paths; not workspace selectors." },
+    "ignore_paths": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "report_file": { "type": "string", "minLength": 1, "description": "Report data destination, including a staged absolute document path." },
+    "approved_plan_dir": { "type": "string", "minLength": 1 },
+    "approved_plan_mode": { "type": "string", "enum": ["openspec_change", "prose_bundle"] },
+    "backend": { "type": "string", "enum": ["gh-copilot", "codex", "cursor"] },
+    "model": { "type": ["string", "null"] },
+    "reasoning_effort": { "type": ["string", "null"], "enum": [null, "low", "medium", "high", "xhigh"] },
+    "detail_level": { "type": "string", "enum": ["concise", "standard", "detailed"] },
+    "timeout_ms": { "type": "integer", "minimum": 1 },
+    "fail_on_mismatch": { "type": "boolean" },
+    "skills_bundle": {},
+    "skills_rendered": { "type": "string" }
+  },
+  "additionalProperties": false
+}

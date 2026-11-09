@@ -1,0 +1,14 @@
+{
+  "runtime_version": "0.12.0",
+  "runtime_source_commit": "8c5721f0aa256a15bfc4d77b43203a9f5ad157fd",
+  "runtime_source_dirty": false,
+  "companion_baseline": "b5068e4c7fc64c53601809698fae228931572236",
+  "comparison": "All five existing vendored schema files compare byte-for-byte equal to schemas/ in the local Step 5 checkout. No schema bytes refreshed; no assertion of identity with the older remote pin.",
+  "sha256": {
+    "app/handshake.response.v1.schema.json": "922232c8eef1def259480706761c21745ca2d8e64af97bae99b45a473997d33e",
+    "app/invoke.progress.v1.schema.json": "d9480d8489c80e32070b03a65a855962c49258d0d71139c347147050a8373f6a",
+    "app/invoke.request.v1.schema.json": "4cf3de0822f2cacfd3d35b530c9e29c51c82c08772cc2f8c9fefc5645a9807be",
+    "app/invoke.result.v1.schema.json": "5bb6b1015d84ce00a59cebf1964cc92370cef2680ea141144235446077a121b8",
+    "tep/error.schema.json": "72daa5f2b684cb29fdc09500351da35d77f171be4e4a342ba6bfbd00c7b7b0ee"
+  }
+}

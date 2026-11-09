@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["key", "summary", "previous_status", "status", "description_text", "url", "attachments"],
+  "allOf": [{"$ref": "compact.schema.json#/$defs/mode"}],
+  "properties": {
+    "output_mode": {"const": "compact"},
+    "diagnostics": {"$ref": "compact.schema.json#/$defs/diagnostics"},
+    "key": { "type": "string" },
+    "summary": { "type": "string" },
+    "previous_status": { "type": "string" },
+    "status": { "type": "string" },
+    "description_text": { "type": "string" },
+    "url": { "type": "string" },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "filename",
+          "mime_type",
+          "size",
+          "created",
+          "author_display_name",
+          "content_url",
+          "thumbnail_url"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "filename": { "type": "string" },
+          "mime_type": { "type": "string" },
+          "size": { "type": "integer", "minimum": 0 },
+          "created": { "type": "string" },
+          "author_display_name": { "type": "string" },
+          "content_url": { "type": "string" },
+          "thumbnail_url": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "raw": { "type": "object" }
+  },
+  "additionalProperties": false
+}

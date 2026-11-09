@@ -1,0 +1,25 @@
+schema: transist.flow.v1
+id: codex_cli_demo
+version: 0.1.0
+plugins:
+  codex.cli: 0.1.0
+inputs:
+  prompt:
+    type: string
+    required: true
+  model:
+    type: string
+  reasoning_effort:
+    type: string
+steps:
+  - id: exec_task
+    uses: process:codex.cli/exec_task
+    prompt: "{{inputs.prompt}}"
+    with:
+      output_mode: compact
+      history_mode: invocation
+      feedback_context_mode: focused
+      max_context_file_bytes: 65536
+      max_prompt_bytes: 98304
+      model: "{{inputs.model}}"
+      reasoning_effort: "{{inputs.reasoning_effort}}"

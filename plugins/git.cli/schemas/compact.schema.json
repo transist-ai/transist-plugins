@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "diagnostics": {
+      "type": "object",
+      "required": ["artifact", "bytes", "retained", "stdout_bytes", "stderr_bytes"],
+      "properties": {
+        "artifact": {"type": "string"},
+        "bytes": {"type": "integer", "minimum": 0},
+        "retained": {"type": "boolean"},
+        "stdout_bytes": {"type": "integer", "minimum": 0},
+        "stderr_bytes": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "mode": {
+      "if": {"required": ["output_mode"]},
+      "then": {
+        "required": ["diagnostics"],
+        "not": {"anyOf": [{"required": ["stdout"]}, {"required": ["stderr"]}]}
+      },
+      "else": {"required": ["stdout", "stderr"], "not": {"required": ["diagnostics"]}}
+    }
+  }
+}

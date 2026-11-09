@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "branch": {"type": ["string", "null"], "minLength": 1, "maxLength": 1024},
+    "detached": {"type": "boolean"}
+  },
+  "required": ["branch", "detached"],
+  "additionalProperties": false,
+  "oneOf": [
+    {"properties": {"branch": {"type": "string"}, "detached": {"const": false}}},
+    {"properties": {"branch": {"type": "null"}, "detached": {"const": true}}}
+  ]
+}

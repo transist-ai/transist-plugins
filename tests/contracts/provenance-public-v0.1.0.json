@@ -1,0 +1,20 @@
+{
+  "source_repository": "https://github.com/transist-ai/transist",
+  "source_tag": "v0.1.0",
+  "source_commit": "44a762cdd8ec2d967497dbd5be5534618da61ec6",
+  "source_directory": "schemas",
+  "license": "MPL-2.0",
+  "runtime_shell_helpers_sha256": {
+    "plugins/shell/process_lifecycle.py": "8fef83ebb7853b82e13b42ccb6f7aa96a676469914fecd2efc9486a7e3cf6240",
+    "plugins/shell/process_runner.py": "f954d81c6c793e556209ca32a8b85f4c16e335be21e4e8a018db49c387dbb061"
+  },
+  "sha256": {
+    "app/handshake.response.v1.schema.json": "922232c8eef1def259480706761c21745ca2d8e64af97bae99b45a473997d33e",
+    "app/invoke.progress.v1.schema.json": "d9480d8489c80e32070b03a65a855962c49258d0d71139c347147050a8373f6a",
+    "app/invoke.request.v1.schema.json": "4cf3de0822f2cacfd3d35b530c9e29c51c82c08772cc2f8c9fefc5645a9807be",
+    "app/invoke.result.v1.schema.json": "5bb6b1015d84ce00a59cebf1964cc92370cef2680ea141144235446077a121b8",
+    "runtime/gate-review.v1.schema.json": "ccc4df62a92b5d2a141dfc5fa4181966e06d716a9b39dec854f344294fa7bd8d",
+    "runtime/managed-documents.v1.schema.json": "84daf5f7d5b37aea8955067069a43542e20f212bade0ef18a3cef3fbed627a4e",
+    "tep/error.schema.json": "72daa5f2b684cb29fdc09500351da35d77f171be4e4a342ba6bfbd00c7b7b0ee"
+  }
+}

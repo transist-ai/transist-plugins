@@ -1,0 +1,16 @@
+schema: transist.flow.v1
+id: text_http_demo
+version: 0.1.0
+plugins:
+  text.http: 0.1.0
+network:
+  mode: loopback
+  allow_hosts: ["http://127.0.0.1:18765"]
+  allow_ports: [18765]
+  tls_required: false
+steps:
+  - id: analyze_demo
+    uses: http:text.http/analyze
+    with:
+      text: "Hello, 世界!\n"
+      maxBytes: 4096

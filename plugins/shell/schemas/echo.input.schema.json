@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "output_mode": {"enum": ["legacy", "compact"], "default": "legacy"},
+    "args": {
+      "type": "array",
+      "items": { "type": ["string", "number", "boolean"] }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["base_url", "model"],
+  "oneOf": [{"required": ["messages"]}, {"required": ["user_text_file"]}],
+  "dependentSchemas": {"system_prompt": {"required": ["user_text_file"]}},
+  "properties": {
+    "base_url": {"type": "string", "minLength": 1},
+    "model": {"type": "string", "minLength": 1, "maxLength": 256},
+    "user_text_file": {"type": "string", "minLength": 1, "description": "Bounded UTF-8 file data including a runtime-staged absolute document path."},
+    "system_prompt": {"type": "string", "minLength": 1},
+    "response_file": {"type": "string", "minLength": 1},
+    "max_prompt_bytes": {"type": "integer", "minimum": 1, "maximum": 262144, "default": 262144},
+    "messages": {
+      "type": "array", "minItems": 1, "maxItems": 64,
+      "items": {
+        "type": "object", "required": ["role", "content"],
+        "properties": {
+          "role": {"type": "string", "enum": ["system", "user", "assistant"]},
+          "content": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "max_tokens": {"type": "integer", "minimum": 1, "maximum": 4096},
+    "timeout_ms": {"type": "integer", "minimum": 1, "maximum": 120000},
+    "secret_refs": {"type": "array", "items": {"type": "string", "const": "OPENAI_COMPATIBLE_API_KEY"}, "minItems": 1, "maxItems": 1}
+  },
+  "additionalProperties": false
+}

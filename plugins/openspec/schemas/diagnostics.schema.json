@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["logs"],
+  "properties": {
+    "logs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "bytes", "truncated", "full_log_storage", "full_log_hint_offered"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "bytes": {"type": "integer", "minimum": 0},
+          "truncated": {"type": "boolean"},
+          "full_log_storage": {"const": "invocation_private"},
+          "full_log_hint_offered": {"type": "boolean"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,48 @@
+name: Feature request
+description: Propose a focused improvement to a plugin package, plugin docs, or contributor tooling.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for focused feature ideas.
+
+        Feature requests are discussion, not commitment. Please keep requests grounded in the current repository scope. This tracker is not a channel for open-ended consulting or for asking maintainers to design an entire system on your behalf. See [Support](https://github.com/transist-ai/transist-plugins/blob/main/SUPPORT.md) for support boundaries.
+
+        Redact credentials, customer data, private paths, prompts, and run artifacts. Report vulnerabilities privately using [Security](https://github.com/transist-ai/transist-plugins/blob/main/SECURITY.md).
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What concrete problem are you trying to solve today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_change
+    attributes:
+      label: Proposed change
+      description: Describe the specific improvement you would like to see.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What are you doing today instead, or what other approaches did you consider?
+    validations:
+      required: false
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Where does this belong?
+      description: Choose the narrowest area that matches your request.
+      options:
+        - Plugin package
+        - Plugin authoring docs
+        - Local skill or contributor tooling
+        - CI or repository automation
+        - Not sure
+    validations:
+      required: true

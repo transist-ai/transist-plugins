@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "MPL-2.0: derived from Transist runtime gate-review.v1 and managed-documents.v1. See tests/contracts/provenance-step-10.json. Local bundle, not an upstream schema ID.",
+  "$ref": "#/$defs/decision",
+  "$defs": {
+    "identifier": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "blob": {
+      "type": "object", "required": ["sha256", "size_bytes"],
+      "properties": {
+        "sha256": { "$ref": "#/$defs/digest" },
+        "size_bytes": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 }
+      },
+      "additionalProperties": false
+    },
+    "revision": {
+      "type": "object",
+      "required": ["schema", "revision_id", "root_run_id", "document", "run_id", "step_id", "execution", "commit_sequence", "kind", "blob", "size_bytes", "file_count"],
+      "properties": {
+        "schema": { "const": "transist.document_revision.v1" },
+        "revision_id": { "$ref": "#/$defs/digest" },
+        "root_run_id": { "$ref": "#/$defs/identifier" },
+        "document": { "$ref": "#/$defs/identifier" },
+        "run_id": { "$ref": "#/$defs/identifier" },
+        "step_id": { "type": "string", "minLength": 1 },
+        "execution": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+        "commit_sequence": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+        "kind": { "enum": ["file", "tree"] },
+        "blob": { "$ref": "#/$defs/blob" },
+        "size_bytes": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+        "file_count": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+      },
+      "allOf": [
+        { "if": { "properties": { "execution": { "const": 0 } } },
+          "then": { "properties": { "step_id": { "const": "__transist_document_initialization" }, "commit_sequence": { "const": 0 }, "kind": { "const": "file" } } },
+          "else": { "properties": { "step_id": { "$ref": "#/$defs/identifier" }, "commit_sequence": { "minimum": 1 } } } },
+        { "if": { "properties": { "kind": { "const": "file" } } }, "then": { "properties": { "file_count": { "const": 1 } } } }
+      ],
+      "additionalProperties": false
+    },
+    "request": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema", "run_id", "gate_id", "step_id", "execution", "review_documents"],
+      "properties": {
+        "schema": { "const": "transist.gate_review_request.v1" },
+        "run_id": { "$ref": "#/$defs/identifier" },
+        "gate_id": { "$ref": "#/$defs/identifier" },
+        "step_id": { "$ref": "#/$defs/identifier" },
+        "execution": { "type": "integer", "minimum": 1, "maximum": 4294967295 },
+        "review_documents": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/revision" } }
+      }
+    },
+    "decision": {
+      "description": "Document gates require review_request exactly equal to the runtime's committed waiting request. Non-document gates omit it. Contextual identity equality is enforced by the kernel.",
+      "type": "object", "additionalProperties": false,
+      "required": ["schema", "run_id", "gate_id", "step_id", "decision"],
+      "properties": {
+        "schema": { "const": "transist.gate_decision.v1" },
+        "run_id": { "$ref": "#/$defs/identifier" },
+        "gate_id": { "$ref": "#/$defs/identifier" },
+        "step_id": { "$ref": "#/$defs/identifier" },
+        "decision": { "enum": ["approved", "rejected", "request_changes"] },
+        "actor": { "type": "string" }, "actor_source": { "type": "string" }, "reason": { "type": "string" },
+        "decided_at_ms": { "type": "integer", "minimum": 0 },
+        "review_request": { "$ref": "#/$defs/request" }
+      }
+    }
+  }
+}

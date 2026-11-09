@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["input_file", "pr_file", "output_file"],
+  "properties": {
+    "input_file": {"type": "string", "minLength": 1},
+    "pending_file": {"type": "string", "minLength": 1},
+    "pr_file": {"type": "string", "minLength": 1},
+    "output_file": {"type": "string", "minLength": 1},
+    "output_mode": {"enum": ["legacy", "compact"], "default": "legacy"},
+    "max_diagnostic_bytes": {"type": "integer", "minimum": 1, "maximum": 262144}
+  },
+  "additionalProperties": false
+}

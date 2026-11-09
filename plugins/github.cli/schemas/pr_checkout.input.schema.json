@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["pull_request"],
+  "properties": {
+    "output_mode": {"enum": ["legacy", "compact"], "default": "legacy"},
+    "max_diagnostic_bytes": {"type": "integer", "minimum": 1, "maximum": 262144},
+    "pull_request": { "type": "string", "minLength": 1 },
+    "repo": { "type": "string" },
+    "branch_name": { "type": "string" },
+    "detach": { "type": "boolean" },
+    "force": { "type": "boolean" }
+  },
+  "additionalProperties": false
+}

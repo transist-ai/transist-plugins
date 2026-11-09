@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "ok",
+    "response_text",
+    "canonical_response_text",
+    "feedback",
+    "response_file",
+    "summary_title",
+    "summary_title_file",
+    "pr_body_file",
+    "exit_code"
+  ],
+  "properties": {
+    "output_mode": { "enum": ["legacy", "compact"] },
+    "pr_body_text": { "type": "string" },
+    "diagnostics": {
+      "type": "object", "required": ["artifacts"], "additionalProperties": false,
+      "properties": { "artifacts": {
+        "type": "array", "maxItems": 32,
+        "items": {
+          "type": "object", "additionalProperties": false,
+          "required": ["artifact", "total_bytes", "retained_bytes", "full_log_available", "retention"],
+          "properties": {
+            "artifact": { "type": "string", "maxLength": 64 },
+            "total_bytes": { "type": "integer", "minimum": 0 },
+            "retained_bytes": { "type": "integer", "minimum": 0 },
+            "full_log_available": { "type": "boolean" },
+            "retention": { "enum": ["full", "diagnostic_preview", "unavailable"] }
+          }
+        }
+      } }
+    },
+    "ok": { "type": "boolean" },
+    "response_text": { "type": "string" },
+    "canonical_response_text": { "type": "string" },
+    "feedback": { "type": "string" },
+    "response_file": { "type": "string" },
+    "summary_title": { "type": "string" },
+    "summary_title_file": { "type": "string" },
+    "pr_body_file": { "type": "string" },
+    "stdout": { "type": "string" },
+    "stderr": { "type": "string" },
+    "exit_code": { "type": ["integer", "null"] }
+  },
+  "allOf": [
+    {
+      "if": { "required": ["output_mode"], "properties": { "output_mode": { "const": "compact" } } },
+      "then": { "required": ["diagnostics", "pr_body_text"], "not": { "anyOf": [{ "required": ["stdout"] }, { "required": ["stderr"] }] } },
+      "else": { "required": ["stdout", "stderr"], "not": { "anyOf": [{ "required": ["diagnostics"] }, { "required": ["pr_body_text"] }] } }
+    },
+    { "if": { "properties": { "ok": { "const": true } } }, "then": { "properties": { "exit_code": { "type": "integer" } } } }
+  ],
+  "additionalProperties": false
+}

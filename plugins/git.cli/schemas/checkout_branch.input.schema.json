@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "output_mode": {"enum": ["legacy", "compact"], "default": "legacy"},
+    "max_capture_bytes": {"type": "integer", "minimum": 1},
+    "max_diagnostic_bytes": {"type": "integer", "minimum": 1, "maximum": 262144},
+    "name": { "type": "string", "minLength": 1 },
+    "create": { "type": "boolean" },
+    "start_point": { "type": "string" }
+  },
+  "additionalProperties": false
+}

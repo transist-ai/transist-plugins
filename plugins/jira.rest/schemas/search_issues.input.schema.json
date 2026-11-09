@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["jql"],
+  "properties": {
+    "output_mode": {"enum": ["legacy", "compact"], "default": "legacy"},
+    "max_response_bytes": {"type": "integer", "minimum": 1, "default": 5242880},
+    "max_diagnostic_bytes": {"type": "integer", "minimum": 1, "maximum": 262144},
+    "jql": { "type": "string", "minLength": 1 },
+    "site_url": { "type": "string" },
+    "max_results": { "type": "integer", "minimum": 1 },
+    "fields": { "type": "array", "items": { "type": "string" } },
+    "next_page_token": { "type": "string" },
+    "output_file": { "type": "string", "minLength": 1 },
+    "secret_refs": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

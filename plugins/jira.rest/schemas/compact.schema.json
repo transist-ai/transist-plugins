@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "diagnostics": {
+      "type": "object",
+      "required": ["artifact", "bytes", "retained"],
+      "properties": {
+        "artifact": {"type": "string"},
+        "bytes": {"type": "integer", "minimum": 0},
+        "retained": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "mode": {
+      "if": {"required": ["output_mode"]},
+      "then": {"required": ["diagnostics"], "not": {"required": ["raw"]}},
+      "else": {"required": ["raw"], "not": {"required": ["diagnostics"]}}
+    }
+  }
+}

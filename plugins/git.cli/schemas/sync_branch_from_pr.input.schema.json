@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["pr_file", "remote"],
+  "properties": {
+    "output_mode": {"enum": ["legacy", "compact"], "default": "legacy"},
+    "max_capture_bytes": {"type": "integer", "minimum": 1},
+    "max_diagnostic_bytes": {"type": "integer", "minimum": 1, "maximum": 262144},
+    "pr_file": { "type": "string", "minLength": 1, "description": "Regular UTF-8 PR JSON, bounded to 5 MiB; accepts runtime-staged absolute document paths without changing Git cwd." },
+    "remote": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}

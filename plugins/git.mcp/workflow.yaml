@@ -1,0 +1,22 @@
+schema: transist.flow.v1
+id: git_mcp_demo
+version: 0.1.0
+plugins:
+  git.mcp: 0.1.0
+inputs:
+  repo_path:
+    type: string
+    required: true
+workspace:
+  path: "{{inputs.repo_path}}"
+  access: read_only
+network:
+  mode: none
+steps:
+  - id: current_branch
+    uses: mcp:git.mcp/current_branch
+    with: {}
+  - id: list_branches
+    uses: mcp:git.mcp/list_branches
+    with:
+      limit: 20

@@ -1,0 +1,105 @@
+schema: transist.plugin.v1
+id: github.cli
+version: 0.1.0
+adapter: process
+entrypoint:
+  type: process
+  command: plugin.py
+prerequisites:
+  binaries:
+    - name: python3
+    - name: gh
+package:
+  files:
+    - plugin.py
+    - github_output.py
+    - mergeability.py
+    - review_context.py
+    - process_lifecycle.py
+    - process_runner.py
+    - schemas/compact.schema.json
+    - schemas/pr_list.input.schema.json
+    - schemas/pr_list.output.schema.json
+    - schemas/pr_view.input.schema.json
+    - schemas/pr_view.output.schema.json
+    - schemas/pr_checkout.input.schema.json
+    - schemas/pr_checkout.output.schema.json
+    - schemas/pr_create.input.schema.json
+    - schemas/pr_create.output.schema.json
+    - schemas/pr_unresolved_comments.input.schema.json
+    - schemas/pr_unresolved_comments.output.schema.json
+    - schemas/pr_check_approvals.input.schema.json
+    - schemas/pr_check_approvals.output.schema.json
+    - schemas/pr_check_mergeability.input.schema.json
+    - schemas/pr_check_mergeability.output.schema.json
+    - schemas/pr_prepare_review_context.input.schema.json
+    - schemas/pr_prepare_review_context.output.schema.json
+    - schemas/pr_merge.input.schema.json
+    - schemas/pr_merge.output.schema.json
+    - schemas/pr_publish_review_replies.input.schema.json
+    - schemas/pr_publish_review_replies.output.schema.json
+    - schemas/pr_comment_upsert.input.schema.json
+    - schemas/pr_comment_upsert.output.schema.json
+actions:
+  - name: pr_list
+    input_schema: schemas/pr_list.input.schema.json
+    output_schema: schemas/pr_list.output.schema.json
+    secret_inputs: []
+    bindings: {}
+  - name: pr_view
+    input_schema: schemas/pr_view.input.schema.json
+    output_schema: schemas/pr_view.output.schema.json
+    secret_inputs: []
+    bindings: {}
+  - name: pr_checkout
+    input_schema: schemas/pr_checkout.input.schema.json
+    output_schema: schemas/pr_checkout.output.schema.json
+    secret_inputs: []
+    bindings: {}
+  - name: pr_create
+    input_schema: schemas/pr_create.input.schema.json
+    output_schema: schemas/pr_create.output.schema.json
+    secret_inputs: []
+    bindings: {}
+  - name: pr_unresolved_comments
+    input_schema: schemas/pr_unresolved_comments.input.schema.json
+    output_schema: schemas/pr_unresolved_comments.output.schema.json
+    secret_inputs: []
+    bindings: {}
+  - name: pr_check_approvals
+    input_schema: schemas/pr_check_approvals.input.schema.json
+    output_schema: schemas/pr_check_approvals.output.schema.json
+    secret_inputs: []
+    bindings: {}
+  - name: pr_merge
+    input_schema: schemas/pr_merge.input.schema.json
+    output_schema: schemas/pr_merge.output.schema.json
+    secret_inputs: []
+    bindings: {}
+  - name: pr_check_mergeability
+    provider_kind: external
+    input_schema: schemas/pr_check_mergeability.input.schema.json
+    output_schema: schemas/pr_check_mergeability.output.schema.json
+    secret_inputs: []
+    bindings: {}
+  - name: pr_prepare_review_context
+    provider_kind: local
+    input_schema: schemas/pr_prepare_review_context.input.schema.json
+    output_schema: schemas/pr_prepare_review_context.output.schema.json
+    secret_inputs: []
+    bindings: {}
+  - name: pr_publish_review_replies
+    input_schema: schemas/pr_publish_review_replies.input.schema.json
+    output_schema: schemas/pr_publish_review_replies.output.schema.json
+    secret_inputs: []
+    bindings: {}
+  - name: pr_comment_upsert
+    input_schema: schemas/pr_comment_upsert.input.schema.json
+    output_schema: schemas/pr_comment_upsert.output.schema.json
+    secret_inputs: []
+    bindings: {}
+capabilities:
+  supports_cancel: true
+  supports_health: false
+  supports_artifact_hints: true
+  supports_evidence_hints: false

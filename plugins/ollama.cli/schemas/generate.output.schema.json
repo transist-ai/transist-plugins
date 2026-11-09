@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["ok", "response_text", "response_file", "exit_code"],
+  "properties": {
+    "output_mode": { "enum": ["legacy", "compact"] },
+    "diagnostics": {
+      "type": "object", "required": ["logs"], "additionalProperties": false,
+      "properties": {"logs": {"type": "array", "items": {
+        "type": "object", "required": ["name", "bytes", "truncated"], "additionalProperties": false,
+        "properties": {"name": {"type": "string", "minLength": 1}, "bytes": {"type": "integer", "minimum": 0}, "truncated": {"type": "boolean"}}
+      }}}
+    },
+    "ok": { "type": "boolean" },
+    "response_text": { "type": "string" },
+    "response_file": { "type": "string" },
+    "stdout": { "type": "string" },
+    "stderr": { "type": "string" },
+    "exit_code": { "type": "integer" }
+  },
+  "additionalProperties": false,
+  "allOf": [{
+    "if": { "required": ["output_mode"], "properties": { "output_mode": { "const": "compact" } } },
+    "then": { "required": ["diagnostics"], "not": { "anyOf": [{"required": ["stdout"]}, {"required": ["stderr"]}] } },
+    "else": { "required": ["stdout", "stderr"], "not": { "required": ["diagnostics"] } }
+  }]
+}

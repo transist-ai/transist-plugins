@@ -1,0 +1,24 @@
+Transist Plugins
+Copyright 2026 the respective Transist Plugins contributors
+
+Original Transist Plugins companion source code is licensed under the Apache
+License, Version 2.0. See LICENSE for the complete terms.
+
+The vendored APP, TEP and runtime JSON schemas in tests/contracts/, plus the
+derived schemas/gate-decision.schema.json in the codex.cli, cursor.cli,
+github.copilot.cli, opencode.cli, openspec and shell packages, are an exception:
+they come from the Transist runtime and remain licensed under the Mozilla
+Public License, v. 2.0 (MPL-2.0), not the root Apache license.
+
+Transist
+Copyright 2026 Andrey Chernykh
+
+This Source Code Form is subject to the terms of the Mozilla Public License,
+v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain
+one at http://mozilla.org/MPL/2.0/.
+See tests/contracts/LICENSE for the complete MPL-2.0 terms and
+tests/contracts/README.md for schema provenance.
+
+Individual plugin packages may include or invoke third-party software. Their
+respective package documentation and distribution artifacts carry any
+applicable attribution and license notices.

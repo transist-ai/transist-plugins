@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["command"],
+  "properties": {
+    "output_mode": {"enum": ["legacy", "compact"], "default": "legacy"},
+    "command": { "type": "string" },
+    "args": {
+      "type": "array",
+      "items": { "type": ["string", "number", "boolean"] }
+    },
+    "gate_decision": {
+      "$ref": "gate-decision.schema.json",
+      "required": ["decided_at_ms"]
+    },
+    "repo_path": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "anyOf": [
+          { "required": ["command"], "properties": { "command": { "pattern": "repo://" } } },
+          { "required": ["args"], "properties": { "args": { "contains": { "type": "string", "pattern": "repo://" } } } }
+        ]
+      },
+      "then": { "required": ["repo_path"] }
+    }
+  ],
+  "additionalProperties": true
+}

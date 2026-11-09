@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "method": {
+      "type": "string",
+      "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"]
+    },
+    "url": {
+      "type": "string"
+    },
+    "headers": {
+      "type": "object"
+    },
+    "query": {
+      "type": "object"
+    },
+    "json": {},
+    "body_text": {
+      "type": "string"
+    },
+    "secret_headers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["secret", "header"],
+        "properties": {
+          "secret": {
+            "type": "string"
+          },
+          "header": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "timeout_ms": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 120000
+    },
+    "max_response_bytes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 26214400
+    },
+    "expected_status": {
+      "oneOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      ]
+    },
+    "secret_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["url"],
+  "additionalProperties": false
+}

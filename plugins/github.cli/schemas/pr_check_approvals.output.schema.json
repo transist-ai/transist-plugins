@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "ok",
+    "approval_ready",
+    "pull_request",
+    "approval_count",
+    "approved_reviewers",
+    "required_approvals",
+    "exit_code"
+  ],
+  "properties": {
+    "output_mode": {"const": "compact"},
+    "diagnostics": {"$ref": "compact.schema.json#/$defs/diagnostics"},
+    "ok": { "type": "boolean" },
+    "approval_ready": { "type": "boolean" },
+    "pull_request": { "type": "object" },
+    "approval_count": { "type": "integer" },
+    "approved_reviewers": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "required_approvals": { "type": "integer" },
+    "stdout": { "type": "string" },
+    "stderr": { "type": "string" },
+    "exit_code": { "type": "integer" }
+  },
+  "allOf": [{"$ref": "compact.schema.json#/$defs/mode"}],
+  "additionalProperties": false
+}

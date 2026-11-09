@@ -1,0 +1,19 @@
+schema: transist.flow.v1
+id: http_demo
+version: 0.1.0
+plugins:
+  http: 0.1.0
+network:
+  mode: allowlist
+  allow_hosts: [httpbin.org]
+  allow_ports: [443]
+  tls_required: true
+  max_redirects: 5
+steps:
+  - id: fetch_allowlisted_json
+    uses: process:http/request
+    with:
+      method: GET
+      url: https://httpbin.org/json
+      headers:
+        Accept: application/json

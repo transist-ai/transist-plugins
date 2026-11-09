@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "downloaded",
+    "skipped",
+    "total_downloaded",
+    "total_skipped",
+    "manifest_path"
+  ],
+  "properties": {
+    "output_mode": {"const": "compact"},
+    "diagnostics": {"$ref": "compact.schema.json#/$defs/diagnostics"},
+    "downloaded": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "filename", "local_path", "mime_type", "size"],
+        "properties": {
+          "id": { "type": "string" },
+          "filename": { "type": "string" },
+           "local_path": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$", "description": "Regular member path relative to the manifest parent; relocate the whole tree together." },
+          "mime_type": { "type": "string" },
+          "size": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "skipped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "filename", "mime_type", "size", "reason"],
+        "properties": {
+          "id": { "type": "string" },
+          "filename": { "type": "string" },
+          "mime_type": { "type": "string" },
+          "size": { "type": "integer", "minimum": 0 },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "extension_not_allowed",
+              "mime_not_allowed",
+              "extension_and_mime_not_allowed",
+              "size_exceeds_max",
+              "fetch_failed"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "total_downloaded": { "type": "integer", "minimum": 0 },
+    "total_skipped": { "type": "integer", "minimum": 0 },
+    "manifest_path": { "type": "string" }
+  },
+  "allOf": [{
+    "if": {"required": ["output_mode"]},
+    "then": {"required": ["diagnostics"]},
+    "else": {"not": {"required": ["diagnostics"]}}
+  }],
+  "additionalProperties": false
+}

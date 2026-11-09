@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["status_code", "headers", "body_bytes", "truncated", "url_final"],
+  "properties": {
+    "status_code": {
+      "type": "integer"
+    },
+    "headers": {
+      "type": "object"
+    },
+    "json": {},
+    "text": {
+      "type": "string"
+    },
+    "body_bytes": {
+      "type": "integer"
+    },
+    "truncated": {
+      "type": "boolean"
+    },
+    "url_final": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

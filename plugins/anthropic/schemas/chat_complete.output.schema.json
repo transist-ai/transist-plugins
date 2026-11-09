@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["response_text"],
+  "additionalProperties": false,
+  "properties": {
+    "response_text": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "finish_reason": {"type": "string", "minLength": 1, "allOf": [{"pattern": "\\S"}, {"pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"}]},
+    "response_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,256}$"},
+    "response_model": {"type": "string", "minLength": 1, "allOf": [{"pattern": "\\S"}, {"pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f]+$"}]},
+    "request_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,256}$"}
+  }
+}

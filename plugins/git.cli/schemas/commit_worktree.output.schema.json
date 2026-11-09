@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["ok", "committed", "commit_sha", "message", "exit_code"],
+  "allOf": [{"$ref": "compact.schema.json#/$defs/mode"}],
+  "properties": {
+    "output_mode": {"const": "compact"},
+    "diagnostics": {"$ref": "compact.schema.json#/$defs/diagnostics"},
+    "ok": { "type": "boolean" },
+    "committed": { "type": "boolean" },
+    "commit_sha": { "type": "string" },
+    "message": { "type": "string" },
+    "stdout": { "type": "string" },
+    "stderr": { "type": "string" },
+    "exit_code": { "type": "integer" }
+  },
+  "additionalProperties": false
+}

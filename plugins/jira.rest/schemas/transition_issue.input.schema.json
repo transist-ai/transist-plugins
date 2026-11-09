@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["issue_key", "status_name"],
+  "properties": {
+    "output_mode": {"enum": ["legacy", "compact"], "default": "legacy"},
+    "max_response_bytes": {"type": "integer", "minimum": 1, "default": 5242880},
+    "max_diagnostic_bytes": {"type": "integer", "minimum": 1, "maximum": 262144},
+    "issue_key": { "type": "string", "minLength": 1 },
+    "status_name": { "type": "string", "minLength": 1 },
+    "site_url": { "type": "string" },
+    "output_file": { "type": "string" },
+    "secret_refs": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

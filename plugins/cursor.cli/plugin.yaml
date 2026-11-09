@@ -1,0 +1,53 @@
+schema: transist.plugin.v1
+id: cursor.cli
+version: 0.1.0
+adapter: process
+entrypoint:
+  type: process
+  command: plugin.py
+  env:
+    CURSOR_CONFIG_DIR: runtime://temp/cursor/config
+    CURSOR_DATA_DIR: runtime://temp/cursor/data
+    TMPDIR: runtime://temp/cursor/tmp
+prerequisites:
+  binaries:
+    - name: python3
+package:
+  files: [plugin.py, gate_review.py, lean_policy.py, process_lifecycle.py, schemas/gate-decision.schema.json, schemas/exec_task.input.schema.json, schemas/exec_task.output.schema.json]
+actions:
+  - name: exec_task
+    input_schema: schemas/exec_task.input.schema.json
+    output_schema: schemas/exec_task.output.schema.json
+    secret_inputs:
+      - name: CURSOR_API_KEY
+        required: true
+        binding:
+          type: env
+          name: CURSOR_API_KEY
+    bindings:
+      transist_prompt_v1:
+        inline_field: prompt
+        file_field: prompt_file
+      transist_skills_v1:
+        bundle_field: skills_bundle
+        rendered_field: skills_rendered
+      transist_gate_decision_v1:
+        decision_field: gate_decision
+  - name: exec_task_cli
+    input_schema: schemas/exec_task.input.schema.json
+    output_schema: schemas/exec_task.output.schema.json
+    secret_inputs: []
+    bindings:
+      transist_prompt_v1:
+        inline_field: prompt
+        file_field: prompt_file
+      transist_skills_v1:
+        bundle_field: skills_bundle
+        rendered_field: skills_rendered
+      transist_gate_decision_v1:
+        decision_field: gate_decision
+capabilities:
+  supports_cancel: true
+  supports_health: false
+  supports_artifact_hints: true
+  supports_evidence_hints: false

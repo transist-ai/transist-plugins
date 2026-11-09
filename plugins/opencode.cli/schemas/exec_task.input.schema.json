@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "output_mode": { "enum": ["legacy", "compact"], "default": "legacy" },
+    "history_mode": { "enum": ["legacy", "invocation"], "default": "legacy" },
+    "max_context_file_bytes": { "type": "integer", "minimum": 1 },
+    "max_prompt_bytes": { "type": "integer", "minimum": 1 },
+    "prompt": { "type": "string", "minLength": 1 },
+    "prompt_file": { "type": "string", "minLength": 1 },
+    "context_files": { "type": "array", "items": { "type": ["string", "null"] }, "description": "Regular UTF-8 context data, including runtime-staged absolute paths; never selects the provider workspace." },
+    "ignore_paths": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "gate_decision": {
+      "$ref": "gate-decision.schema.json",
+      "required": ["decided_at_ms"]
+    },
+    "feedback_context_mode": {
+      "type": "string",
+      "enum": ["full", "focused", "feedback-only"]
+    },
+    "response_file": { "type": "string", "description": "File data destination, including a staged absolute document path; external invocation history is artifact-only." },
+    "summary_title_file": { "type": "string" },
+    "pr_body_file": { "type": "string" },
+    "allowed_tools": { "type": "array", "items": { "type": "string" } },
+    "denied_tools": { "type": "array", "items": { "type": "string" } },
+    "timeout_ms": { "type": "integer", "minimum": 1 },
+    "timeout_seconds": { "type": "integer", "minimum": 1 },
+    "model": { "type": ["string", "null"] },
+    "reasoning_effort": { "type": ["string", "null"], "enum": ["low", "medium", "high", "xhigh", null] },
+    "variant": { "type": ["string", "null"], "minLength": 1 },
+    "agent": { "type": ["string", "null"], "minLength": 1 },
+    "session_title": { "type": "string" },
+    "share": { "type": "boolean" },
+    "dangerously_skip_permissions": { "type": "boolean" },
+    "permission": {},
+    "extra_args": { "type": "array", "items": { "type": "string" } },
+    "skills_bundle": {},
+    "skills_rendered": { "type": "string" },
+    "secret_refs": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  },
+  "additionalProperties": false
+}

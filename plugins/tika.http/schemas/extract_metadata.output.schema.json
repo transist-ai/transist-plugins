@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object", "additionalProperties": false,
+  "required": ["document_sha256", "metadata"],
+  "properties": {
+    "document_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "metadata": {
+      "type": "object", "additionalProperties": false,
+      "patternProperties": {
+        "^(Content-Type|Content-Length|Content-Encoding|dc:title|dc:creator|dcterms:created|dcterms:modified|xmpTPg:NPages)$": {
+          "type": "array", "maxItems": 16, "items": {"type": "string", "maxLength": 4096}
+        }
+      }
+    }
+  }
+}

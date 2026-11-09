@@ -1,0 +1,9 @@
+schema: transist.flow.v1
+id: git_cli_demo
+version: 0.1.0
+plugins:
+  git.cli: 0.1.0
+steps:
+  - id: current_branch
+    uses: process:git.cli/current_branch
+    with: {}

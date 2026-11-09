@@ -1,0 +1,68 @@
+schema: transist.plugin.v1
+id: jira.rest
+version: 0.1.0
+adapter: process
+entrypoint:
+  type: process
+  command: plugin.py
+prerequisites:
+  binaries:
+    - name: python3
+package:
+  files: [plugin.py, jira_output.py, schemas/compact.schema.json, schemas/get_issue.input.schema.json, schemas/get_issue.output.schema.json, schemas/search_issues.input.schema.json, schemas/search_issues.output.schema.json, schemas/create_issue.input.schema.json, schemas/create_issue.output.schema.json, schemas/transition_issue.input.schema.json, schemas/transition_issue.output.schema.json, schemas/download_attachments.input.schema.json, schemas/download_attachments.output.schema.json]
+actions:
+  - name: get_issue
+    input_schema: schemas/get_issue.input.schema.json
+    output_schema: schemas/get_issue.output.schema.json
+    secret_inputs:
+      - name: JIRA_AUTH_HEADER
+        required: true
+        binding:
+          type: env
+          name: JIRA_AUTH_HEADER
+    bindings: {}
+  - name: search_issues
+    input_schema: schemas/search_issues.input.schema.json
+    output_schema: schemas/search_issues.output.schema.json
+    secret_inputs:
+      - name: JIRA_AUTH_HEADER
+        required: true
+        binding:
+          type: env
+          name: JIRA_AUTH_HEADER
+    bindings: {}
+  - name: create_issue
+    input_schema: schemas/create_issue.input.schema.json
+    output_schema: schemas/create_issue.output.schema.json
+    secret_inputs:
+      - name: JIRA_AUTH_HEADER
+        required: true
+        binding:
+          type: env
+          name: JIRA_AUTH_HEADER
+    bindings: {}
+  - name: transition_issue
+    input_schema: schemas/transition_issue.input.schema.json
+    output_schema: schemas/transition_issue.output.schema.json
+    secret_inputs:
+      - name: JIRA_AUTH_HEADER
+        required: true
+        binding:
+          type: env
+          name: JIRA_AUTH_HEADER
+    bindings: {}
+  - name: download_attachments
+    input_schema: schemas/download_attachments.input.schema.json
+    output_schema: schemas/download_attachments.output.schema.json
+    secret_inputs:
+      - name: JIRA_AUTH_HEADER
+        required: true
+        binding:
+          type: env
+          name: JIRA_AUTH_HEADER
+    bindings: {}
+capabilities:
+  supports_cancel: true
+  supports_health: false
+  supports_artifact_hints: true
+  supports_evidence_hints: false

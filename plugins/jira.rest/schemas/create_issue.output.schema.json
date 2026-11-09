@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["key", "id", "url"],
+  "allOf": [{"$ref": "compact.schema.json#/$defs/mode"}],
+  "properties": {
+    "output_mode": {"const": "compact"},
+    "diagnostics": {"$ref": "compact.schema.json#/$defs/diagnostics"},
+    "key": { "type": "string" },
+    "id": { "type": "string" },
+    "url": { "type": "string" },
+    "raw": { "type": "object" }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,82 @@
+schema: transist.flow.v1
+id: openspec_demo
+version: 0.1.0
+plugins:
+  openspec: 0.1.0
+network:
+  mode: allowlist
+  allow_hosts:
+    - api.github.com
+    - api.githubcopilot.com
+    - github.com
+  allow_ports: [443]
+  tls_required: true
+inputs:
+  repo_path:
+    type: string
+    required: true
+  change_name:
+    type: string
+    required: true
+  plan_prompt:
+    type: string
+    required: true
+  verify_prompt:
+    type: string
+    default: Validate the current repository state against the generated OpenSpec change.
+  backend:
+    type: string
+    default: gh-copilot
+  plan_model:
+    type: string
+  plan_reasoning_effort:
+    type: string
+  verify_model:
+    type: string
+  verify_reasoning_effort:
+    type: string
+workspace:
+  path: "{{inputs.repo_path}}"
+  access: full
+artifacts:
+  plan:
+    scope: run
+    path: openspec_demo/plan.md
+  change_metadata:
+    scope: run
+    path: openspec_demo/openspec_change.json
+  validation_report:
+    scope: run
+    path: openspec_demo/validation_report.md
+steps:
+  - id: generate_plan
+    uses: process:openspec/generate_plan
+    prompt: "{{inputs.plan_prompt}}"
+    with:
+      output_mode: compact
+      max_prompt_bytes: 98304
+      max_context_file_bytes: 65536
+      change_name: "{{inputs.change_name}}"
+      backend: "{{inputs.backend}}"
+      model: "{{inputs.plan_model}}"
+      reasoning_effort: "{{inputs.plan_reasoning_effort}}"
+      response_file: "{{artifacts.plan}}"
+      change_metadata_file: "{{artifacts.change_metadata}}"
+    skills:
+      - skills/transist-plugin-authoring/SKILL.md
+
+  - id: verify
+    uses: process:openspec/verify
+    prompt: "{{inputs.verify_prompt}}"
+    with:
+      output_mode: compact
+      max_prompt_bytes: 98304
+      max_context_file_bytes: 65536
+      change_name: "{{inputs.change_name}}"
+      backend: "{{inputs.backend}}"
+      model: "{{inputs.verify_model}}"
+      reasoning_effort: "{{inputs.verify_reasoning_effort}}"
+      context_files:
+        - "{{artifacts.plan}}"
+        - "{{artifacts.change_metadata}}"
+      report_file: "{{artifacts.validation_report}}"

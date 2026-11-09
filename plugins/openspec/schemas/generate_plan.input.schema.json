@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["change_name"],
+  "properties": {
+    "output_mode": { "type": "string", "enum": ["legacy", "compact"], "default": "legacy" },
+    "max_prompt_bytes": { "type": "integer", "minimum": 1 },
+    "max_context_file_bytes": { "type": "integer", "minimum": 1 },
+    "target_repo_path": { "type": "string" },
+    "change_name": { "type": "string", "minLength": 1 },
+    "prompt": { "type": "string", "minLength": 1 },
+    "prompt_file": { "type": "string", "minLength": 1 },
+    "context_files": { "type": "array", "items": { "type": "string" }, "description": "Regular UTF-8 file data, including runtime-staged absolute document paths; not workspace selectors." },
+    "ignore_paths": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "repo_context_mode": {
+      "type": "string",
+      "enum": ["none", "full", "paths"]
+    },
+    "repo_context_paths": { "type": "array", "items": { "type": "string" } },
+    "gate_decision": {
+      "$ref": "gate-decision.schema.json",
+      "required": ["decided_at_ms"]
+    },
+    "feedback_context_mode": {
+      "type": "string",
+      "enum": ["full", "focused", "feedback-only"]
+    },
+    "response_file": { "type": "string", "minLength": 1, "description": "Summary file data destination, including a staged absolute document path." },
+    "change_metadata_file": { "type": "string", "minLength": 1 },
+    "canonical_plan_dir": { "type": "string", "minLength": 1 },
+    "backend": { "type": "string", "enum": ["gh-copilot", "codex", "cursor"] },
+    "model": { "type": ["string", "null"] },
+    "reasoning_effort": { "type": ["string", "null"], "enum": [null, "low", "medium", "high", "xhigh"] },
+    "detail_level": { "type": "string", "enum": ["concise", "standard", "detailed"] },
+    "timeout_ms": { "type": "integer", "minimum": 1 },
+    "skills_bundle": {},
+    "skills_rendered": { "type": "string" }
+  },
+  "additionalProperties": false
+}

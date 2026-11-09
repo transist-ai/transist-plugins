@@ -1,0 +1,31 @@
+schema: transist.flow.v1
+id: anthropic_demo
+version: 0.1.0
+plugins:
+  anthropic: 0.1.0
+inputs:
+  model:
+    type: string
+    required: true
+  prompt:
+    type: string
+    required: true
+network:
+  mode: none
+steps:
+  - id: ask
+    uses: process:anthropic/chat_complete
+    network:
+      mode: allowlist
+      allow_hosts: [api.anthropic.com]
+      allow_ports: [443]
+      tls_required: true
+    with:
+      model: "{{inputs.model}}"
+      system: Answer concisely and accurately.
+      messages:
+        - role: user
+          content: "{{inputs.prompt}}"
+      max_tokens: 256
+      timeout_ms: 30000
+      secret_refs: [ANTHROPIC_API_KEY]

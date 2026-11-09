@@ -1,0 +1,45 @@
+schema: transist.plugin.v1
+id: openspec
+version: 0.1.0
+adapter: process
+entrypoint:
+  type: process
+  command: plugin.py
+  env:
+    COPILOT_HOME: runtime://temp/openspec/copilot
+    COPILOT_CONFIG_DIR: runtime://temp/openspec/copilot
+    COPILOT_SESSION_STATE_DIR: runtime://temp/openspec/copilot/session-state
+    XDG_CACHE_HOME: runtime://temp/openspec/copilot/cache
+    TMPDIR: runtime://temp/openspec/tmp
+package:
+  files: [plugin.py, gate_review.py, lean_io.py, process_lifecycle.py, process_runner.py, prompts/generate_plan.md, prompts/verify.md, schemas/gate-decision.schema.json, schemas/generate_plan.input.schema.json, schemas/generate_plan.output.schema.json, schemas/verify.input.schema.json, schemas/verify.output.schema.json, schemas/diagnostics.schema.json]
+actions:
+  - name: generate_plan
+    input_schema: schemas/generate_plan.input.schema.json
+    output_schema: schemas/generate_plan.output.schema.json
+    secret_inputs: []
+    bindings:
+      transist_prompt_v1:
+        inline_field: prompt
+        file_field: prompt_file
+      transist_skills_v1:
+        bundle_field: skills_bundle
+        rendered_field: skills_rendered
+      transist_gate_decision_v1:
+        decision_field: gate_decision
+  - name: verify
+    input_schema: schemas/verify.input.schema.json
+    output_schema: schemas/verify.output.schema.json
+    secret_inputs: []
+    bindings:
+      transist_prompt_v1:
+        inline_field: prompt
+        file_field: prompt_file
+      transist_skills_v1:
+        bundle_field: skills_bundle
+        rendered_field: skills_rendered
+capabilities:
+  supports_cancel: true
+  supports_health: false
+  supports_artifact_hints: true
+  supports_evidence_hints: false

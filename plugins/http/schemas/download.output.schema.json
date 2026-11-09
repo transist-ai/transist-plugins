@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["path", "bytes", "content_type", "sha256", "truncated", "url_final"],
+  "properties": {
+    "path": { "type": "string" },
+    "bytes": { "type": "integer" },
+    "content_type": { "type": "string" },
+    "sha256": { "type": "string" },
+    "truncated": { "type": "boolean" },
+    "url_final": { "type": "string" }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "output_mode": {"enum": ["legacy", "compact"], "default": "legacy"},
+    "max_response_bytes": {"type": "integer", "minimum": 1, "default": 5242880},
+    "max_total_response_bytes": {"type": "integer", "minimum": 1, "default": 20971520},
+    "max_comments": {"type": "integer", "minimum": 1, "default": 10000},
+    "max_diagnostic_bytes": {"type": "integer", "minimum": 1, "maximum": 262144},
+    "include_pr_conversation_comments": { "type": "boolean" },
+    "pull_request": { "type": "string", "minLength": 1 },
+    "repo": { "type": "string" },
+    "output_file": { "type": "string" }
+  },
+  "additionalProperties": false
+}

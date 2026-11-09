@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["response_text"],
+  "properties": {
+    "response_text": {"type": "string", "minLength": 1},
+    "finish_reason": {"type": "string"},
+    "response_id": {"type": "string"},
+    "response_model": {"type": "string"}
+  },
+  "additionalProperties": false
+}

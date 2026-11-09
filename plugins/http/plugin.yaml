@@ -1,0 +1,106 @@
+schema: transist.plugin.v1
+id: http
+version: 0.1.0
+adapter: process
+default_provider_kind: external
+entrypoint:
+  type: process
+  command: plugin.py
+package:
+  files: [plugin.py, schemas/request.input.schema.json, schemas/request.output.schema.json, schemas/download.input.schema.json, schemas/download.output.schema.json]
+actions:
+  - name: request
+    input_schema: schemas/request.input.schema.json
+    output_schema: schemas/request.output.schema.json
+    secret_inputs:
+      - name: HTTP_SECRET_1
+        required: false
+        binding:
+          type: env
+          name: HTTP_SECRET_1
+      - name: HTTP_SECRET_2
+        required: false
+        binding:
+          type: env
+          name: HTTP_SECRET_2
+      - name: HTTP_SECRET_3
+        required: false
+        binding:
+          type: env
+          name: HTTP_SECRET_3
+      - name: HTTP_SECRET_4
+        required: false
+        binding:
+          type: env
+          name: HTTP_SECRET_4
+      - name: HTTP_SECRET_5
+        required: false
+        binding:
+          type: env
+          name: HTTP_SECRET_5
+      - name: HTTP_SECRET_6
+        required: false
+        binding:
+          type: env
+          name: HTTP_SECRET_6
+      - name: HTTP_SECRET_7
+        required: false
+        binding:
+          type: env
+          name: HTTP_SECRET_7
+      - name: HTTP_SECRET_8
+        required: false
+        binding:
+          type: env
+          name: HTTP_SECRET_8
+    bindings: {}
+  - name: download
+    input_schema: schemas/download.input.schema.json
+    output_schema: schemas/download.output.schema.json
+    secret_inputs:
+      - name: HTTP_SECRET_1
+        required: false
+        binding:
+          type: env
+          name: HTTP_SECRET_1
+      - name: HTTP_SECRET_2
+        required: false
+        binding:
+          type: env
+          name: HTTP_SECRET_2
+      - name: HTTP_SECRET_3
+        required: false
+        binding:
+          type: env
+          name: HTTP_SECRET_3
+      - name: HTTP_SECRET_4
+        required: false
+        binding:
+          type: env
+          name: HTTP_SECRET_4
+      - name: HTTP_SECRET_5
+        required: false
+        binding:
+          type: env
+          name: HTTP_SECRET_5
+      - name: HTTP_SECRET_6
+        required: false
+        binding:
+          type: env
+          name: HTTP_SECRET_6
+      - name: HTTP_SECRET_7
+        required: false
+        binding:
+          type: env
+          name: HTTP_SECRET_7
+      - name: HTTP_SECRET_8
+        required: false
+        binding:
+          type: env
+          name: HTTP_SECRET_8
+    bindings: {}
+capabilities:
+  supports_cancel: true
+  supports_health: false
+  supports_artifact_hints: true
+  supports_evidence_hints: true

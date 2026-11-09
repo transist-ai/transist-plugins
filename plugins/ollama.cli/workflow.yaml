@@ -1,0 +1,20 @@
+schema: transist.flow.v1
+id: ollama_cli_demo
+version: 0.1.0
+plugins:
+  ollama.cli: 0.1.0
+inputs:
+  prompt:
+    type: string
+    required: true
+  model:
+    type: string
+    required: true
+steps:
+  - id: generate
+    uses: process:ollama.cli/generate
+    prompt: "{{inputs.prompt}}"
+    with:
+      output_mode: compact
+      max_prompt_bytes: 98304
+      model: "{{inputs.model}}"

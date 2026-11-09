@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "ok",
+    "comments",
+    "count",
+    "review_thread_comment_count",
+    "pr_conversation_comment_count",
+    "pr_conversation_comments_after",
+    "last_successful_fetch_completed_at",
+    "exit_code"
+  ],
+  "properties": {
+    "output_mode": {"const": "compact"},
+    "diagnostics": {"$ref": "compact.schema.json#/$defs/diagnostics"},
+    "ok": { "type": "boolean" },
+    "comments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "author", "body", "path", "outdated", "diff_hunk", "created_at", "url", "source"],
+        "properties": {
+          "id": { "type": "string" },
+          "author": { "type": "string" },
+          "body": { "type": "string" },
+          "path": { "type": "string" },
+          "outdated": { "type": "boolean" },
+          "diff_hunk": { "type": "string" },
+          "created_at": { "type": "string" },
+          "url": { "type": "string" },
+          "source": {
+            "type": "string",
+            "enum": ["review_thread", "pr_conversation"]
+          },
+          "thread_id": { "type": "string" },
+          "review_comment_id": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "count": { "type": "integer" },
+    "review_thread_comment_count": { "type": "integer" },
+    "pr_conversation_comment_count": { "type": "integer" },
+    "pr_conversation_comments_after": { "type": "string" },
+    "last_successful_fetch_completed_at": { "type": "string" },
+    "stdout": { "type": "string" },
+    "stderr": { "type": "string" },
+    "exit_code": { "type": "integer" }
+  },
+  "allOf": [
+    {"$ref": "compact.schema.json#/$defs/mode"},
+    {
+      "if": {"required": ["output_mode"]},
+      "then": {
+        "properties": {
+          "comments": {"items": {"required": ["thread_id", "review_comment_id"]}}
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

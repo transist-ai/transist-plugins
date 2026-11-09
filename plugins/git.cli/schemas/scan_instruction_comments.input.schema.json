@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["output_file"],
+  "properties": {
+    "output_file": {"type": "string", "minLength": 1},
+    "output_mode": {"enum": ["legacy", "compact"], "default": "legacy"},
+    "max_diagnostic_bytes": {"type": "integer", "minimum": 1, "maximum": 262144}
+  },
+  "additionalProperties": false
+}

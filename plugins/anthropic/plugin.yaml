@@ -1,0 +1,29 @@
+schema: transist.plugin.v1
+id: anthropic
+version: 0.1.0
+adapter: process
+default_provider_kind: external
+entrypoint:
+  type: process
+  command: plugin.py
+prerequisites:
+  binaries:
+    - name: python3
+package:
+  files: [plugin.py, schemas/chat_complete.input.schema.json, schemas/chat_complete.output.schema.json]
+actions:
+  - name: chat_complete
+    input_schema: schemas/chat_complete.input.schema.json
+    output_schema: schemas/chat_complete.output.schema.json
+    secret_inputs:
+      - name: ANTHROPIC_API_KEY
+        required: true
+        binding:
+          type: env
+          name: ANTHROPIC_API_KEY
+    bindings: {}
+capabilities:
+  supports_cancel: true
+  supports_health: false
+  supports_artifact_hints: true
+  supports_evidence_hints: false

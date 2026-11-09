@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "output_mode": {"enum": ["legacy", "compact"], "default": "legacy"},
+    "max_capture_bytes": {"type": "integer", "minimum": 1},
+    "max_diagnostic_bytes": {"type": "integer", "minimum": 1, "maximum": 262144},
+    "message": { "type": "string" },
+    "jira_ticket_id": { "type": "string" },
+    "summary_file": { "type": "string", "description": "Regular UTF-8 title file, bounded to 65536 bytes; accepts runtime-staged absolute document paths as data." },
+    "add_all": { "type": "boolean" },
+    "allow_no_changes": { "type": "boolean" }
+  },
+  "additionalProperties": false
+}

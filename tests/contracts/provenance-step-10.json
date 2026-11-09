@@ -1,0 +1,14 @@
+{
+  "source_repository": "https://github.com/transist-ai/transist.oss",
+  "source_head": "48b1d9aaf7b0f56d20eae73cd9068312dcae8771",
+  "source_worktree": "dirty Step 10 run.id repair; hashes identify actual source bytes, not a clean-HEAD claim",
+  "license": "MPL-2.0",
+  "files": {
+    "runtime/gate-review.v1.schema.json": "ccc4df62a92b5d2a141dfc5fa4181966e06d716a9b39dec854f344294fa7bd8d",
+    "runtime/managed-documents.v1.schema.json": "84daf5f7d5b37aea8955067069a43542e20f212bade0ef18a3cef3fbed627a4e"
+  },
+  "package_bundle": {
+    "path": "plugins/{codex.cli,cursor.cli,github.copilot.cli,opencode.cli,openspec,shell}/schemas/gate-decision.schema.json",
+    "transformation": "Retain canonical decision/request/identifier plus transitive revision/blob/digest definitions; rewrite only the request's revision ref to #/$defs/revision; omit upstream $id. Action input schemas separately retain required decided_at_ms. No manifest/content field exists on the canonical closed revision."
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "ok",
+    "backend",
+    "effective_change_name",
+    "change_dir",
+    "proposal_file",
+    "tasks_file",
+    "design_file",
+    "spec_files",
+    "response_text",
+    "response_file",
+    "change_metadata_file",
+    "canonical_plan_dir",
+    "canonical_readme_file",
+    "exit_code"
+  ],
+  "properties": {
+    "output_mode": { "enum": ["legacy", "compact"] },
+    "diagnostics": { "$ref": "diagnostics.schema.json" },
+    "ok": { "type": "boolean" },
+    "backend": { "type": "string" },
+    "effective_change_name": { "type": "string" },
+    "change_dir": { "type": "string" },
+    "proposal_file": { "type": "string" },
+    "tasks_file": { "type": "string" },
+    "design_file": { "type": "string" },
+    "spec_files": { "type": "array", "items": { "type": "string" } },
+    "response_text": { "type": "string" },
+    "response_file": { "type": "string" },
+    "change_metadata_file": { "type": "string" },
+    "canonical_plan_dir": { "type": "string" },
+    "canonical_readme_file": { "type": "string" },
+    "stdout": { "type": "string" },
+    "stderr": { "type": "string" },
+    "exit_code": { "type": "integer" }
+  },
+  "additionalProperties": false,
+  "allOf": [{
+    "if": { "required": ["output_mode"], "properties": { "output_mode": { "const": "compact" } } },
+    "then": { "required": ["diagnostics"], "not": { "anyOf": [{"required": ["stdout"]}, {"required": ["stderr"]}] } },
+    "else": { "required": ["stdout", "stderr"], "not": { "required": ["diagnostics"] } }
+  }]
+}

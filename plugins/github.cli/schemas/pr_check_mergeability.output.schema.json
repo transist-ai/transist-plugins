@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["ok", "merge_ready", "allowed_merge_state_statuses", "pull_request", "merge_state_status", "mergeable", "state", "is_draft", "review_decision", "status_check_rollup", "reasons", "exit_code"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "merge_ready": {"type": "boolean"},
+    "allowed_merge_state_statuses": {"type": "array", "items": {"type": "string"}},
+    "pull_request": {"type": "object"},
+    "merge_state_status": {"type": "string"},
+    "mergeable": {},
+    "state": {"type": "string"},
+    "is_draft": {"type": "boolean"},
+    "review_decision": {"type": "string"},
+    "status_check_rollup": {},
+    "reasons": {"type": "array", "items": {"type": "string"}},
+    "exit_code": {"type": "integer"},
+    "stdout": {"type": "string"},
+    "stderr": {"type": "string"},
+    "output_mode": {"const": "compact"},
+    "diagnostics": {"$ref": "compact.schema.json#/$defs/diagnostics"}
+  },
+  "allOf": [{"$ref": "compact.schema.json#/$defs/mode"}],
+  "additionalProperties": false
+}

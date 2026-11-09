@@ -1,0 +1,12 @@
+schema: transist.flow.v1
+id: jira_rest_demo
+version: 0.1.0
+plugins:
+  jira.rest: 0.1.0
+steps:
+  - id: get_issue
+    uses: process:jira.rest/get_issue
+    with:
+      site_url: https://your-domain.atlassian.net
+      issue_key: DEMO-123
+      secret_refs: ["JIRA_AUTH_HEADER"]

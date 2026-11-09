@@ -1,0 +1,38 @@
+schema: transist.plugin.v1
+id: git.mcp
+version: 0.1.0
+adapter: mcp
+default_provider_kind: local
+entrypoint:
+  type: mcp
+  command: server.py
+  env:
+    TMPDIR: runtime://temp
+package:
+  files:
+    - server.py
+    - process_lifecycle.py
+    - schemas/current_branch.input.schema.json
+    - schemas/current_branch.output.schema.json
+    - schemas/list_branches.input.schema.json
+    - schemas/list_branches.output.schema.json
+prerequisites:
+  binaries:
+    - name: python3
+    - name: git
+actions:
+  - name: current_branch
+    input_schema: schemas/current_branch.input.schema.json
+    output_schema: schemas/current_branch.output.schema.json
+    bindings:
+      tool_name: current_branch
+  - name: list_branches
+    input_schema: schemas/list_branches.input.schema.json
+    output_schema: schemas/list_branches.output.schema.json
+    bindings:
+      tool_name: list_branches
+capabilities:
+  supports_cancel: false
+  supports_health: false
+  supports_artifact_hints: false
+  supports_evidence_hints: false

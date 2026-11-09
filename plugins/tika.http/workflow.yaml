@@ -1,0 +1,26 @@
+schema: transist.flow.v1
+id: tika_http_demo
+version: 0.1.0
+plugins:
+  tika.http: 0.1.0
+inputs:
+  document_base64: {type: string, required: true}
+  content_type: {type: string, required: true}
+network:
+  mode: allowlist
+  allow_hosts: [tika.example.invalid]
+  allow_ports: [443]
+  tls_required: true
+steps:
+  - id: text
+    uses: http:tika.http/extract_text
+    with:
+      document_base64: "{{inputs.document_base64}}"
+      content_type: "{{inputs.content_type}}"
+      secret_refs: [TIKA_AUTHORIZATION]
+  - id: metadata
+    uses: http:tika.http/extract_metadata
+    with:
+      document_base64: "{{inputs.document_base64}}"
+      content_type: "{{inputs.content_type}}"
+      secret_refs: [TIKA_AUTHORIZATION]

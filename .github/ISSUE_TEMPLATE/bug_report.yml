@@ -1,0 +1,60 @@
+name: Bug report
+description: Report a reproducible defect in a plugin package, doc, or support asset.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+
+        Please use this form only for reproducible defects. For vulnerabilities, do not open a public issue; follow [Security](https://github.com/transist-ai/transist-plugins/blob/main/SECURITY.md). For support boundaries, see [Support](https://github.com/transist-ai/transist-plugins/blob/main/SUPPORT.md).
+
+        Redact credentials, authorization headers, customer data, private paths, prompts, and run artifacts from commands, logs, and attachments.
+  - type: input
+    id: package
+    attributes:
+      label: Affected package or area
+      description: Name the plugin package, doc page, skill, or CI asset that is affected.
+      placeholder: github.cli or plugins/github.cli/README.md
+    validations:
+      required: true
+  - type: input
+    id: transist_version
+    attributes:
+      label: Transist version
+      description: Exact `transist --version` output and source SHA or release; state dirty local changes and include `transist-admin --version` when relevant.
+      placeholder: transist 0.12.0; canonical source SHA; transist-admin 0.12.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, shell, Python version if relevant, and package-specific local setup details.
+      placeholder: macOS 15, zsh, Python 3.13
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include the smallest package, commands, or workflow needed to reproduce the issue.
+      placeholder: Step-by-step reproduction with exact `transist` and package commands.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead? Include relevant redacted output or logs, never raw secrets or private run artifacts.
+    validations:
+      required: true
