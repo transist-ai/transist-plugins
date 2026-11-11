@@ -380,6 +380,7 @@ class InstalledDocuments(unittest.TestCase):
             target.mkdir()
             source = ROOT / "plugins" / package
             manifest = yaml.safe_load((source / "plugin.yaml").read_text())
+            self.plugin_version = manifest["version"]
             for relative in manifest["package"]["files"]:
                 path = target / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -403,8 +404,8 @@ class InstalledDocuments(unittest.TestCase):
                 config.read_text().replace("process: false", "process: true")
             )
             self.cli("plugins", "install", "--path", str(target / "plugin.yaml"))
-            self.assertIn("0.1.0", self.cli("plugins", "inspect", package))
-            installed = self.home / "plugins" / package / "0.1.0"
+            self.assertIn(self.plugin_version, self.cli("plugins", "inspect", package))
+            installed = self.home / "plugins" / package / self.plugin_version
             selected_files = {"plugin.yaml", *manifest["package"]["files"]}
             self.assertEqual(
                 {
@@ -485,7 +486,7 @@ class InstalledDocuments(unittest.TestCase):
             "schema": "transist.flow.v1",
             "id": self.run_id,
             "version": "0.1.0",
-            "plugins": {self.package: "0.1.0"},
+            "plugins": {self.package: self.plugin_version},
             "workspace": {"path": str(self.workspace), "access": "full"},
             "network": network or {"mode": "none"},
             "documents": docs,

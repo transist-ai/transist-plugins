@@ -27,11 +27,13 @@ public issues or pull requests; follow [Security](SECURITY.md).
 
 - Public packages live only under `plugins/<id>/`; keep their READMEs standalone.
 - Treat installed/published selected payloads as immutable. `plugin.yaml` plus
-  `package.files` determines the digest. Public manifests and workflow templates
-  remain exactly `0.1.0`; selected-byte/file-list changes require a new digest and
-  matching signature for governed use, validated in a fresh home. Preserve older homes, installs,
+  `package.files` determines the digest. After initial publication, selected-byte
+  or file-list changes require a new plugin version, digest and matching signature
+  for governed use, validated in a fresh home. Preserve older homes, installs,
   and runs. Unselected docs/tests are not runtime dependencies. Read the
-  [fixed-version policy](docs/authoring.md#plugin-version-policy).
+  [version policy](docs/authoring.md#plugin-version-policy). Keep reported plugin
+  versions and exact demo pins consistent with the affected manifests; leave
+  unchanged plugins alone. Update affected release-specific fixtures when bumping.
 - Preserve ids, actions, schemas, and bindings deliberately: workflows depend
   on them. Declare provider locality and unconditional startup prerequisites.
 - Document all read/inherited/forwarded/plugin-managed environment variables,
@@ -89,7 +91,7 @@ Every command's stdout/stderr is captured and retained in the parent log. A
 failed unit suite does not omit later smokes or packages; any failure keeps the
 overall exit status nonzero. Root test dependencies include the public Tika
 package's pinned HTTPX/Starlette/Uvicorn versions for its offline ASGI/wire tests.
-Root acceptance tests cover every public `0.1.0` manifest and exact demo dependency
+Root acceptance tests cover every public manifest and exact demo dependency
 pin, independently selected lean-helper parity, inventory boundaries, and labelled
 synthetic storage savings/linear replay growth. Process-helper behavior remains
 covered by the existing lifecycle suites.

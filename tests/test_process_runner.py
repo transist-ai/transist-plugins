@@ -523,15 +523,13 @@ class HelperParityTests(unittest.TestCase):
                     (directory / "process_runner.py").read_bytes(), runner_bytes
                 )
 
-    def test_helpers_are_selected_package_payloads_without_version_changes(
-        self,
-    ) -> None:
+    def test_helpers_are_selected_package_payloads(self) -> None:
         for package in PACKAGES:
             with self.subTest(package=package):
                 manifest = yaml.safe_load(
                     (ROOT / "plugins" / package / "plugin.yaml").read_text()
                 )
-                self.assertEqual(manifest["version"], "0.1.0")
+                self.assertEqual(manifest["id"], package)
                 self.assertIn("process_lifecycle.py", manifest["package"]["files"])
                 self.assertIn("process_runner.py", manifest["package"]["files"])
 
@@ -550,7 +548,7 @@ class HelperParityTests(unittest.TestCase):
                 hashlib.sha256((ROOT / path).read_bytes()).hexdigest(), digest
             )
         manifest = yaml.safe_load((ROOT / "plugins/shell/plugin.yaml").read_text())
-        self.assertEqual(manifest["version"], "0.1.0")
+        self.assertEqual(manifest["id"], "shell")
         self.assertIn("process_lifecycle.py", manifest["package"]["files"])
         self.assertIn("process_runner.py", manifest["package"]["files"])
 

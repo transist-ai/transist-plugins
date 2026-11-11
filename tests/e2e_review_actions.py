@@ -91,11 +91,13 @@ class InstalledReviewActions(unittest.TestCase):
             config.write_text(
                 config.read_text().replace("process: false", "process: true")
             )
+            self.plugin_versions: dict[str, str] = {}
             for name in ("git.cli", "github.cli"):
                 source = ROOT / "plugins" / name
                 target = self.source / name
                 target.mkdir()
                 manifest = yaml.safe_load((source / "plugin.yaml").read_text())
+                self.plugin_versions[name] = manifest["version"]
                 for relative in manifest["package"]["files"]:
                     path = target / relative
                     path.parent.mkdir(parents=True, exist_ok=True)
@@ -120,8 +122,10 @@ class InstalledReviewActions(unittest.TestCase):
                     manifest["prerequisites"] = {"binaries": [{"name": "python3"}]}
                 (target / "plugin.yaml").write_text(yaml.safe_dump(manifest))
                 self.cli("plugins", "install", "--path", str(target / "plugin.yaml"))
-                self.assertIn("0.1.0", self.cli("plugins", "inspect", name))
-                installed = self.home / "plugins" / name / "0.1.0"
+                self.assertIn(
+                    self.plugin_versions[name], self.cli("plugins", "inspect", name)
+                )
+                installed = self.home / "plugins" / name / self.plugin_versions[name]
                 selected = {"plugin.yaml", *manifest["package"]["files"]}
                 self.assertEqual(
                     {
@@ -174,7 +178,11 @@ class InstalledReviewActions(unittest.TestCase):
             "id": run_id,
             "version": "0.1.0",
             "plugins": {
-                s["uses"].split(":", 1)[1].split("/", 1)[0]: "0.1.0"
+                s["uses"]
+                .split(":", 1)[1]
+                .split("/", 1)[0]: self.plugin_versions[
+                    s["uses"].split(":", 1)[1].split("/", 1)[0]
+                ]
                 for s in steps
                 if "uses" in s
             },

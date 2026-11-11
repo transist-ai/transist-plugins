@@ -155,12 +155,14 @@ class InstalledLifecycleTests(unittest.TestCase):
                 return result.stdout
 
             cli("home", "init", "--mode", "standalone")
+            plugin_versions: dict[str, str] = {}
             try:
                 for package in PACKAGES:
                     fixture_package = source / "packages" / package
                     shutil.copytree(ROOT / "plugins" / package, fixture_package)
                     manifest_path = fixture_package / "plugin.yaml"
                     manifest = yaml.safe_load(manifest_path.read_text())
+                    plugin_versions[package] = manifest["version"]
                     # Native sandbox dispatch restores the detached runner's
                     # PATH. Set fixture-only environment in the SAME entrypoint
                     # process, without introducing a subprocess/session or
@@ -184,7 +186,9 @@ class InstalledLifecycleTests(unittest.TestCase):
                         "--path",
                         str(manifest_path),
                     )
-                    self.assertIn("0.1.0", cli("plugins", "inspect", package))
+                    self.assertIn(
+                        plugin_versions[package], cli("plugins", "inspect", package)
+                    )
                 for package in PACKAGES:
                     for mode in ("pipes", "resistant"):
                         with self.subTest(package=package, mode=mode):
@@ -197,7 +201,7 @@ class InstalledLifecycleTests(unittest.TestCase):
                                 "schema": "transist.flow.v1",
                                 "id": identity,
                                 "version": "0.1.0",
-                                "plugins": {package: "0.1.0"},
+                                "plugins": {package: plugin_versions[package]},
                                 "workspace": {"path": str(workspace), "access": "full"},
                                 "network": {"mode": "none"},
                                 "steps": [
@@ -232,7 +236,13 @@ class InstalledLifecycleTests(unittest.TestCase):
                             self.wait_success(cli, identity)
                             self.assert_children_stopped(workspace)
                 for package in PACKAGES:
-                    cli("plugins", "uninstall", package, "--version", "0.1.0")
+                    cli(
+                        "plugins",
+                        "uninstall",
+                        package,
+                        "--version",
+                        plugin_versions[package],
+                    )
             finally:
                 settle_runs(home, cli)
 

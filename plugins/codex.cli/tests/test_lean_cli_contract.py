@@ -227,11 +227,9 @@ class LeanCliContractTests(unittest.TestCase):
                 package = PACKAGES / plugin_id
                 self.assertEqual((package / "lean_policy.py").read_bytes(), reference)
                 manifest = yaml.safe_load((package / "plugin.yaml").read_text())
-                self.assertEqual(manifest["version"], "0.1.0")
                 self.assertIn("lean_policy.py", manifest["package"]["files"])
                 workflow = yaml.safe_load((package / "workflow.yaml").read_text())
-                self.assertEqual(workflow["version"], "0.1.0")
-                self.assertEqual(workflow["plugins"][plugin_id], "0.1.0")
+                self.assertEqual(workflow["plugins"][plugin_id], manifest["version"])
                 controls = workflow["steps"][0]["with"]
                 self.assertEqual(controls["max_context_file_bytes"], 65536)
                 self.assertEqual(controls["max_prompt_bytes"], 98304)
@@ -1276,7 +1274,7 @@ class LeanCliContractTests(unittest.TestCase):
                     )
                 self.assertEqual((code, stderr), (0, ""))
                 handshake, frame = assert_app_frames(frames, plugin_id)
-                self.assertEqual(handshake["plugin"]["version"], "0.1.0")
+                self.assertEqual(handshake["plugin"]["version"], manifest["version"])
                 self.assertEqual(frame["status"], "success")
                 self.validator(plugin_id).validate(frame["output"])
                 self.assertEqual(frame["output"]["response_text"], ANSWER)

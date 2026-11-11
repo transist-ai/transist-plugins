@@ -11,6 +11,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
+import check_plugin_structure  # noqa: E402
 from benchmark_run_persistence import benchmark  # noqa: E402
 from check_plugins import COMPACT_SMOKE_PACKAGES, offline_commands  # noqa: E402
 from check_public_snapshot import candidate_files  # noqa: E402
@@ -23,23 +24,37 @@ class LeanAcceptanceTests(unittest.TestCase):
     """Enforce public contracts without operational homes or real providers."""
 
     def test_every_public_manifest_and_template_exact_pins(self) -> None:
-        """Public manifests and demo release/dependency pins retain exact 0.1.0."""
+        """Public releases are valid and template pins match local manifests."""
         manifests = [
             path
             for path in candidate_files(ROOT)
             if path.parts[0] == "plugins" and path.name == "plugin.yaml"
         ]
         self.assertTrue(manifests)
+        catalog = {
+            relative.parent.name: yaml.safe_load((ROOT / relative).read_text())
+            for relative in manifests
+        }
         for relative in manifests:
             with self.subTest(package=relative.parent.name):
-                manifest = yaml.safe_load((ROOT / relative).read_text())
-                self.assertEqual(manifest["version"], "0.1.0")
+                manifest = catalog[relative.parent.name]
+                self.assertEqual(manifest["schema"], "transist.plugin.v1")
+                self.assertEqual(manifest["id"], relative.parent.name)
+                self.assertTrue(
+                    check_plugin_structure.is_release_version(manifest["version"])
+                )
                 flow = yaml.safe_load(
                     (ROOT / relative.parent / "workflow.yaml").read_text()
                 )
-                self.assertEqual(flow["version"], "0.1.0")
+                self.assertEqual(flow["schema"], "transist.flow.v1")
+                self.assertTrue(
+                    check_plugin_structure.is_release_version(flow["version"])
+                )
                 self.assertTrue(flow["plugins"])
-                self.assertTrue(all(pin == "0.1.0" for pin in flow["plugins"].values()))
+                for package, version in flow["plugins"].items():
+                    self.assertIn(package, catalog)
+                    self.assertTrue(check_plugin_structure.is_release_version(version))
+                    self.assertEqual(version, catalog[package]["version"])
 
     def test_required_only_templates_preserve_literal_lean_controls(self) -> None:
         """Materialize optional inputs as null while preserving literal controls."""

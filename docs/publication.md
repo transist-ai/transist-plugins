@@ -5,7 +5,7 @@ working repository's history as a substitute for a reviewed clean snapshot.
 The public inventory is 16 packages under `plugins/<id>/`; ignored/private root
 material, credentials, generated artifacts, and local binaries are excluded.
 
-Publish an **unsigned source-only v0.1.0 release** with all 16 package/demo
+For initial publication, publish an **unsigned source-only v0.1.0 release** with all 16 package/demo
 identities and exact pins fixed at `0.1.0`; no publisher-signed bundles or trust
 root are supplied. Target public runtime v0.1.0, commit
 `44a762cdd8ec2d967497dbd5be5534618da61ec6`. The final complete native macOS/Linux
@@ -90,6 +90,28 @@ assuming a later deletion removes historical exposure.
   both-platform gate on that committed snapshot before public visibility, the
   annotated `v0.1.0` tag and source-only release. Confirm static CI on the exact
   commit; static success alone does not authorize publication.
+
+## Subsequent repository releases
+
+After the initial publication, plugins and demos follow the independent
+[version policy](authoring.md#plugin-version-policy). A repository release is a
+validated catalog snapshot, not a requirement that all included packages share
+its version or the runtime version. Leave unchanged plugins at their old versions.
+
+Create a new source-only GitHub Release when an adoption-worthy fix, feature,
+new plugin or runtime-compatibility baseline passes the documented release gate
+on the exact candidate commit. Routine documentation-only changes usually do not
+need a release. Keep published tags and payloads immutable; corrections ship in
+a new release, never by moving the old tag.
+
+Release notes must list changed plugin/workflow versions, supported runtime
+identity, validation results and limitations, breaking changes and migration
+steps. GitHub's automatic source archives suffice; custom binaries, signed
+bundles and a release automation pipeline are not required. Source-only releases
+remain unsigned unless a separately reviewed signing process is introduced.
+The initial clean-history export steps above are not an instruction to discard
+public history for every subsequent release. Preserve prior snapshots and homes
+for rollback; later source validation does not retroactively accept new payloads.
 
 ## Design decisions and rationale
 

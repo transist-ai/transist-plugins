@@ -81,8 +81,9 @@ the current both-platform release gate is [recorded separately](validation.md).
 
 ## Delivery at version 0.1.0
 
-Maintained packages now declare `0.1.0` under the repository's fixed-version
-rule. Changed payloads have new digests: existing signatures and
+At initial publication, maintained packages declare `0.1.0`. Subsequent releases
+follow the independent [version policy](authoring.md#plugin-version-policy).
+Changed payloads have new digests: existing signatures and
 run asset locks do not cover them. Do not overwrite a live signed installation
 or reinterpret a prepared/failed run against different bytes. Prepare fresh
 publisher signatures, install through the public lifecycle in a separate home,
