@@ -21,6 +21,25 @@ SMOKE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SMOKE)
 
 
+class BuildTests(unittest.TestCase):
+    """Ensure the release build never replaces an existing artifact."""
+
+    def test_existing_output_is_preserved(self) -> None:
+        """A preexisting output fails before compilation and remains unchanged."""
+        with tempfile.TemporaryDirectory(dir="/tmp") as directory:
+            output = Path(directory) / "ollama.cli"
+            output.write_bytes(b"existing")
+            result = subprocess.run(
+                ["sh", str(PACKAGE / "build.sh"), str(output)],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Refusing to overwrite", result.stderr)
+            self.assertEqual(output.read_bytes(), b"existing")
+
+
 class SmokeCleanupTests(unittest.TestCase):
     """Exercise real disposable groups, never provider or runtime groups."""
 

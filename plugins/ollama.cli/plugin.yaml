@@ -1,6 +1,6 @@
 schema: transist.plugin.v1
 id: ollama.cli
-version: 0.1.0
+version: 0.1.1
 adapter: process
 default_provider_kind: local
 entrypoint:

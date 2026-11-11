@@ -20,8 +20,8 @@ func TestReleaseVersion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(manifest), "\nversion: 0.1.0\n") {
-		t.Fatal("manifest release must be exactly 0.1.0")
+	if !strings.Contains(string(manifest), "\nversion: 0.1.1\n") {
+		t.Fatal("manifest release must be exactly 0.1.1")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -40,7 +40,7 @@ func TestReleaseVersion(t *testing.T) {
 	if response.Type != "app.handshake.response.v1" || response.ProtocolVersion != "app.v1" {
 		t.Fatal("release policy must not change the APP schema or protocol")
 	}
-	if response.Plugin["id"] != "ollama.cli" || response.Plugin["version"] != "0.1.0" {
-		t.Fatal("handshake identity must match the 0.1.0 catalog release")
+	if response.Plugin["id"] != "ollama.cli" || response.Plugin["version"] != "0.1.1" {
+		t.Fatal("handshake identity must match the 0.1.1 release")
 	}
 }
