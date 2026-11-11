@@ -285,7 +285,7 @@ def installed_smoke(binary: Path, fixture_base: Path) -> dict:
                     "schema": "transist.flow.v1",
                     "id": workflow_id,
                     "version": "0.1.0",
-                    "plugins": {"codex.cli": "0.1.0"},
+                    "plugins": {"codex.cli": manifest["version"]},
                     "network": {"mode": "none"},
                     "workspace": {"path": str(workspace), "access": "full"},
                     "steps": [

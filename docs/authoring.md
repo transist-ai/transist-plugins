@@ -7,7 +7,9 @@ and [manifest reference](https://github.com/transist-ai/transist/blob/v0.1.0/doc
 Use the runtime sources of truth and tested revision in
 [compatibility](compatibility.md). This page adds companion repository conventions.
 
-Publication is unsigned source-only at fixed `0.1.0`. The final public-runtime
+Initial publication is unsigned source-only at `0.1.0`. Subsequent plugins are
+versioned independently under the [version policy](#plugin-version-policy).
+The final public-runtime
 macOS/Linux gate is [recorded separately](validation.md); historical development results do
 not establish acceptance. Required tests use fixtures without live credentials.
 
@@ -54,8 +56,9 @@ Generated binaries, ignored local packages, and caches are not public sources.
 - Declare `provider_kind` or `default_provider_kind` deliberately; absent locality
   defaults to external. Declare unconditional binary/env/path prerequisites.
 - Changing selected bytes or the file list changes the digest and requires a
-  matching new signature for governed use. This repository's [fixed-version policy](#plugin-version-policy)
-  keeps manifests/templates at `0.1.0`; validate changed bytes in a fresh home.
+  matching new signature for governed use. After initial publication, the
+  [version policy](#plugin-version-policy) also requires a new plugin version;
+  validate changed bytes in a fresh home.
   Unselected docs, tests, and workflows are exported public assets, not payload.
 - Keep tests self-contained; do not require a private checkout or provider login
   for offline checks. Keep new offline checks discoverable by the local root
@@ -184,25 +187,42 @@ pending checks. Read [publication](publication.md) before exporting source packa
 
 ## Plugin version policy
 
-Every maintained public plugin manifest must declare the exact release `0.1.0`.
-The repository structure check enforces this contract, so any other value fails
-CI. Keep the plugin's reported runtime version in sync with `plugin.yaml`.
+The initial publication baseline is `0.1.0` for all plugins and demos. After
+publication, version each plugin independently using SemVer 2.0.0. Leave unchanged
+plugins at their existing versions; do not move a published tag or replace a
+published payload under the same id/version.
 
-Public workflow templates also declare release `0.1.0` and exact `0.1.0` plugin
-pins; the structure checker enforces both. Schema identifiers such as
-`transist.plugin.v1`, `transist.flow.v1`, and `app.v1` are contracts, not release
-versions, and remain unchanged. Synthetic rejection cases in
-`PluginStructureTests.test_plugin_version_must_be_exactly_0_1_0` and
-`test_workflow_release_and_all_dependency_pins_are_fixed` deliberately use other
-versions. They are test-local fixtures outside the maintained catalog; they do
-not exempt any public package or demo. Dated validation records retain observed
-historical versions rather than claiming that old checks verified new bytes.
+| Change after publication | Version change |
+| --- | --- |
+| Compatible bug fix or internal selected-payload change | Patch, e.g. `0.1.0` to `0.1.1` |
+| Backward-compatible action or optional input | Minor, e.g. `0.1.1` to `0.2.0` |
+| Breaking inputs, outputs, actions, defaults or required authority | Next minor before `1.0.0`; next major thereafter, with migration notes |
+| New plugin | Start at `0.1.0` |
+| Docs/tests outside the selected payload | No plugin bump |
+
+Any change to `plugin.yaml`, selected bytes or `package.files` requires a new
+plugin version after publication. Keep APP/MCP discovery and other reported
+versions in sync with the manifest; update affected package-local tests and guides.
+The static checker validates exact semantic versions (including prerelease/build
+suffixes), not version ranges, and requires every demo dependency pin to match its
+own local plugin manifest. Reported versions are checked separately by behavioral
+tests; static CI does not execute plugins or prove bump correctness against history.
+
+Workflow releases evolve independently too. Bump a demo's workflow version when
+its packaged behavior or dependency pins change; do not change unrelated demos.
+Schema identifiers such as `transist.plugin.v1`, `transist.flow.v1`, and `app.v1`
+are contracts, not release versions, and remain unchanged. Repository snapshot
+tags and runtime compatibility versions are separate from plugin/workflow
+versions; see [publication](publication.md#subsequent-repository-releases).
+Dated validation records retain observed historical versions rather than claiming
+that old checks verified new bytes.
 
 A version string is not a content identity: selected bytes and
 `package.files` determine `plugin_dir_sha256`, and a signature approves that
 specific digest. Recompute and sign changed selected bytes before governed use.
 Validate them in a new disposable home; preserve older homes and their locked
-payloads. Do not overwrite an existing same-version install, edit its files,
+payloads. A version bump does not replace digest/signature verification.
+Do not overwrite an existing same-version install, edit its files,
 reuse an old signature, or delete runs to bypass asset locks. A fresh run in a
 fresh home is the adoption path. Rollback selects the preserved old home and
 its original workflow/package bytes, subject to normal runtime readiness checks.

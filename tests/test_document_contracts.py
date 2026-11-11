@@ -45,7 +45,7 @@ class DocumentContractTests(unittest.TestCase):
         for package in ("shell", "openai.compatible"):
             directory = PACKAGES / package
             manifest = yaml.safe_load((directory / "plugin.yaml").read_text())
-            self.assertEqual(manifest["version"], "0.1.0")
+            self.assertEqual(manifest["id"], package)
             self.assertIn("file_io.py", manifest["package"]["files"])
             for action in manifest["actions"]:
                 for field in ("input_schema", "output_schema"):

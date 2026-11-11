@@ -60,7 +60,7 @@ class GateDecisionContractTests(unittest.TestCase):
                 self.assertNotIn("$id", contents)
                 self.assertEqual(contents["$defs"], expected)
                 manifest = yaml.safe_load((directory / "plugin.yaml").read_text())
-                self.assertEqual(manifest["version"], "0.1.0")
+                self.assertEqual(manifest["id"], package)
                 self.assertIn(
                     "schemas/gate-decision.schema.json", manifest["package"]["files"]
                 )

@@ -16,6 +16,7 @@ from check_plugin_structure import (  # noqa: E402
     DRAFT,
     StructureError,
     check_repository,
+    is_release_version,
     read_document,
 )
 
@@ -122,43 +123,85 @@ class PluginStructureTests(unittest.TestCase):
         self.write_manifest()
         self.assert_rejected("action names must be nonempty and unique")
 
-    def test_plugin_version_must_be_exactly_0_1_0(self) -> None:
-        """Reject every manifest version other than the repository's fixed version."""
-        # Deliberate negative/version-policy fixtures, not maintained releases.
-        for version in (
-            "1.0.0",
-            "0.1.1",
-            "0.2.0",
-            "0.1",
-            "v0.1.0",
-            "0.1.0-dev",
-            "0.1.0+build",
-            0.1,
-            None,
-        ):
+    def test_independent_plugin_and_workflow_versions(self) -> None:
+        """Accept independently released packages and workflows with exact pins."""
+        import shutil
+
+        other = self.root / "plugins" / "other"
+        shutil.copytree(self.package, other)
+        manifest = dict(self.manifest, id="other", version="1.2.3")
+        (other / "plugin.yaml").write_text(yaml.safe_dump(manifest))
+        for version in ("0.1.1", "0.2.0", "1.0.0", "2.0.0-rc.1+build.42"):
             with self.subTest(version=version):
                 self.manifest["version"] = version
                 self.write_manifest()
-                self.assert_rejected("manifest version must be exactly 0.1.0")
+                self.workflow["version"] = "3.0.0"
+                self.workflow["plugins"] = {"example": version, "other": "1.2.3"}
+                self.write_workflow()
+                (other / "workflow.yaml").write_text(yaml.safe_dump(self.workflow))
+                self.assertEqual(check_repository(self.root), [])
 
-    def test_workflow_release_and_all_dependency_pins_are_fixed(self) -> None:
-        """Reject stale releases and pins, including an extra nonmatching dependency."""
-        # Only these synthetic rejection cases are exempt from the release policy.
-        for version in ("1.0.0", "0.1.1", "v1", "0.1.0-dev", 0.1, None):
+    def test_invalid_versions_and_dependency_ranges(self) -> None:
+        """Reject malformed SemVer and nonexact pins without executing payloads."""
+        for version in (
+            "",
+            "0.1",
+            "v0.1.0",
+            "01.1.0",
+            "1.01.0",
+            "1.0.01",
+            "1.0.0-01",
+            "1.0.0-",
+            "1.0.0+",
+            "1.0.0-rc..1",
+            "1.0.0+build..1",
+            "1.0.0\n",
+            "^0.1.0",
+            ">=0.1.0",
+            "*",
+            0.1,
+            True,
+            None,
+            [],
+            {},
+        ):
             with self.subTest(version=version):
+                self.assertFalse(is_release_version(version))
+                self.manifest["version"] = version
+                self.write_manifest()
+                self.assert_rejected(
+                    "manifest version must be an exact semantic version"
+                )
+                self.manifest["version"] = "0.1.0"
+                self.write_manifest()
                 self.workflow["version"] = version
                 self.write_workflow()
-                self.assert_rejected("workflow version must be exactly 0.1.0")
+                self.assert_rejected(
+                    "workflow version must be an exact semantic version"
+                )
                 self.workflow["version"] = "0.1.0"
-                self.workflow["plugins"] = {"example": "0.1.0", "other": version}
+                self.workflow["plugins"] = {"example": version}
                 self.write_workflow()
-                self.assert_rejected("workflow plugin pins must be exactly 0.1.0")
+                self.assert_rejected(
+                    "workflow plugin pins must be exact semantic versions"
+                )
+
+    def test_dependency_pins_match_each_local_manifest(self) -> None:
+        """Valid versions cannot hide stale pins or unavailable dependencies."""
+        self.workflow["plugins"] = {"example": "0.1.1"}
+        self.write_workflow()
+        self.assert_rejected(
+            "workflow plugin pin must match its local manifest version"
+        )
+        self.workflow["plugins"] = {"example": "0.1.0", "missing": "1.0.0"}
+        self.write_workflow()
+        self.assert_rejected("workflow dependency must have a local plugin manifest")
 
     def test_workflow_requires_release_and_dependency_mapping(self) -> None:
         """Missing releases and empty/nonmapping pins cannot evade the catalog gate."""
         del self.workflow["version"]
         self.write_workflow()
-        self.assert_rejected("workflow version must be exactly 0.1.0")
+        self.assert_rejected("workflow version must be an exact semantic version")
         self.workflow["version"] = "0.1.0"
         for pins in (None, {}, [], ["0.1.0"], "0.1.0"):
             with self.subTest(pins=pins):
@@ -378,6 +421,8 @@ class PluginStructureTests(unittest.TestCase):
         self.package.rename(destination)
         self.package = destination
         self.manifest["id"] = "ollama.cli"
+        self.workflow["plugins"] = {"ollama.cli": "0.1.0"}
+        self.write_workflow()
         self.manifest["entrypoint"]["command"] = "bin/ollama.cli"
         self.manifest["package"]["files"][0] = "bin/ollama.cli"
         (self.package / "cmd/plugin").mkdir(parents=True)

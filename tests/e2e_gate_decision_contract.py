@@ -188,7 +188,7 @@ class InstalledGateContract(documents.InstalledDocuments):
             "schema": "transist.flow.v1",
             "id": self.run_id,
             "version": "0.1.0",
-            "plugins": {self.package: "0.1.0"},
+            "plugins": {self.package: self.plugin_version},
             "workspace": {"path": str(self.workspace), "access": "full"},
             "network": {"mode": "none"},
             "documents": {

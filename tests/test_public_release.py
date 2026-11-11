@@ -11,6 +11,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
+import check_plugin_structure  # noqa: E402
 from check_public_snapshot import candidate_files  # noqa: E402
 
 PACKAGES = frozenset(
@@ -39,7 +40,7 @@ class PublicReleaseTests(unittest.TestCase):
     """Reject missing packages, drifting pins and obsolete active instructions."""
 
     def test_exact_catalog_and_demo_pins(self) -> None:
-        """All sixteen manifests and every bundled demo retain release 0.1.0."""
+        """Catalog releases are valid and demo pins match each local manifest."""
         paths = candidate_files(ROOT)
         manifests = [
             path
@@ -49,12 +50,16 @@ class PublicReleaseTests(unittest.TestCase):
             and path.name == "plugin.yaml"
         ]
         self.assertEqual({path.parent.name for path in manifests}, PACKAGES)
+        versions = {}
         for path in manifests:
             with self.subTest(path=str(path)):
                 manifest = yaml.safe_load((ROOT / path).read_text())
                 self.assertEqual(manifest["schema"], "transist.plugin.v1")
                 self.assertEqual(manifest["id"], path.parent.name)
-                self.assertEqual(manifest["version"], "0.1.0")
+                self.assertTrue(
+                    check_plugin_structure.is_release_version(manifest["version"])
+                )
+                versions[manifest["id"]] = manifest["version"]
         for path in paths:
             if path.parts[0] != "plugins" or path.suffix not in {".yaml", ".yml"}:
                 continue
@@ -65,10 +70,13 @@ class PublicReleaseTests(unittest.TestCase):
             }:
                 continue
             with self.subTest(path=str(path)):
-                self.assertEqual(document["version"], "0.1.0")
+                self.assertTrue(
+                    check_plugin_structure.is_release_version(document["version"])
+                )
                 for package, version in document.get("plugins", {}).items():
                     self.assertIn(package, PACKAGES)
-                    self.assertEqual(version, "0.1.0")
+                    self.assertTrue(check_plugin_structure.is_release_version(version))
+                    self.assertEqual(version, versions[package])
 
     def test_active_documentation_uses_public_runtime(self) -> None:
         """Current reader entrypoints must not require the private development line."""

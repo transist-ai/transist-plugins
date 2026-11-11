@@ -5,7 +5,8 @@ the runtime for explicit, repository-local workflows. Plugins connect declared
 steps to commands, services and MCP tools; workflows define their inputs,
 authority and ordering. Model-backed CLIs are optional participants.
 
-All **16 public packages** live under `plugins/<id>/`, fixed at **0.1.0**.
+All **16 public packages** live under `plugins/<id>/`, initially at **0.1.0**.
+After initial publication, plugins may be [versioned independently](docs/authoring.md#plugin-version-policy).
 This is an **unsigned, source-only publication**, with no publisher-signed bundles
 or trust root. Original companion source is [Apache-2.0](LICENSE); vendored and
 derived runtime schemas retain [MPL-2.0](tests/contracts/LICENSE). See
@@ -90,7 +91,7 @@ retain their original evidence and do not establish public-release acceptance.
 ## Authoring, publication and contribution
 
 - [Authoring](docs/authoring.md): package contracts, adapters, secrets, managed
-  documents, compact outputs and the fixed `0.1.0` policy.
+   documents, compact outputs and independent plugin versioning.
 - [Publication](docs/publication.md): clean source export, rights, independent
   secret scanning and the final both-platform gate.
 - [Contributing](CONTRIBUTING.md): scoped checks, focused changes and DCO sign-off.

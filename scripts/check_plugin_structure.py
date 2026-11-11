@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path, PurePosixPath
+import re
 import subprocess
 import sys
 from typing import Any
@@ -19,7 +20,13 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 DRAFT = "https://json-schema.org/draft/2020-12/schema"
-RELEASE_VERSION = "0.1.0"
+_NUMBER = r"(?:0|[1-9][0-9]*)"
+_PRERELEASE = rf"(?:{_NUMBER}|[0-9]*[A-Za-z-][0-9A-Za-z-]*)"
+_RELEASE_VERSION = re.compile(
+    rf"{_NUMBER}\.{_NUMBER}\.{_NUMBER}"
+    rf"(?:-{_PRERELEASE}(?:\.{_PRERELEASE})*)?"
+    r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
+)
 # This source repository deliberately does not commit compiled install payloads.
 GENERATED_PAYLOADS = {
     "ollama.cli": {"bin/ollama.cli": ("go.mod", "cmd/plugin/main.go")},
@@ -121,6 +128,11 @@ def require(condition: bool, message: str) -> None:
     """Raise a contract diagnostic when a static assertion is not satisfied."""
     if not condition:
         raise StructureError(message)
+
+
+def is_release_version(value: object) -> bool:
+    """Return whether a value is an exact SemVer 2.0.0 string, not a range or tag."""
+    return isinstance(value, str) and _RELEASE_VERSION.fullmatch(value) is not None
 
 
 def check_schema(
@@ -263,8 +275,8 @@ def check_package(root: Path, package: str, files: set[str]) -> None:
         manifest.get("id") == package, "manifest id must match its canonical directory"
     )
     require(
-        manifest.get("version") == RELEASE_VERSION,
-        f"manifest version must be exactly {RELEASE_VERSION}",
+        is_release_version(manifest.get("version")),
+        "manifest version must be an exact semantic version",
     )
     workflow = read_document(base / "workflow.yaml")
     require(isinstance(workflow, dict), "workflow must be a YAML mapping")
@@ -273,8 +285,8 @@ def check_package(root: Path, package: str, files: set[str]) -> None:
         "workflow schema must be transist.flow.v1",
     )
     require(
-        workflow.get("version") == RELEASE_VERSION,
-        f"workflow version must be exactly {RELEASE_VERSION}",
+        is_release_version(workflow.get("version")),
+        "workflow version must be an exact semantic version",
     )
     pins = workflow.get("plugins")
     require(
@@ -282,9 +294,21 @@ def check_package(root: Path, package: str, files: set[str]) -> None:
         "workflow plugins must be a nonempty mapping",
     )
     require(
-        all(pin == RELEASE_VERSION for pin in pins.values()),
-        f"workflow plugin pins must be exactly {RELEASE_VERSION}",
+        all(is_release_version(pin) for pin in pins.values()),
+        "workflow plugin pins must be exact semantic versions",
     )
+    for dependency, pin in pins.items():
+        relative = f"plugins/{dependency}/plugin.yaml"
+        require(
+            relative in files,
+            "workflow dependency must have a local plugin manifest",
+        )
+        dependency_manifest = read_document(regular_file(root, relative))
+        require(
+            isinstance(dependency_manifest, dict)
+            and dependency_manifest.get("version") == pin,
+            "workflow plugin pin must match its local manifest version",
+        )
     adapter = manifest.get("adapter")
     require(adapter in ("process", "http", "mcp"), "unsupported adapter")
     packaging = manifest.get("package")

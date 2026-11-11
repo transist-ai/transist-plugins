@@ -22,7 +22,7 @@ class VersionPolicyTests(unittest.TestCase):
     """Exercise actual Python APP/MCP discovery, separate from protocol versions."""
 
     def test_process_handshakes_match_catalog_release(self) -> None:
-        """Every Python process package reports 0.1.0 over unchanged APP v1."""
+        """Every Python process package reports its manifest release over APP v1."""
         manifests = [
             ROOT / relative
             for relative in candidate_files(ROOT)
@@ -40,7 +40,6 @@ class VersionPolicyTests(unittest.TestCase):
                 self.assertEqual(manifest["id"], "ollama.cli")
                 continue
             with self.subTest(package=package.name):
-                self.assertEqual(manifest["version"], "0.1.0")
                 with resolved_runtime_temp_environment(package) as environment:
                     result = subprocess.run(
                         [sys.executable, "-B", str(command)],
@@ -67,7 +66,7 @@ class VersionPolicyTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     frames[0]["plugin"],
-                    {"id": manifest["id"], "version": "0.1.0"},
+                    {"id": manifest["id"], "version": manifest["version"]},
                 )
                 checked.append(package.name)
         self.assertIn("shell", checked)
@@ -100,9 +99,9 @@ class VersionPolicyTests(unittest.TestCase):
         )
         self.assertEqual(result.stderr, "")
         response = json.loads(result.stdout)["result"]
-        self.assertEqual(manifest["version"], "0.1.0")
         self.assertEqual(
-            response["serverInfo"], {"name": manifest["id"], "version": "0.1.0"}
+            response["serverInfo"],
+            {"name": manifest["id"], "version": manifest["version"]},
         )
         self.assertEqual(response["protocolVersion"], "2025-06-18")
 

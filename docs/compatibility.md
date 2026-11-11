@@ -22,7 +22,10 @@ Read the release-pinned runtime documentation:
 - [Workflow schema](https://github.com/transist-ai/transist/blob/v0.1.0/docs/public/reference/workflow-schema.md)
 
 All 16 companion packages implement `transist.plugin.v1`; manifests, discovery,
-demo releases and exact dependency pins remain `0.1.0`. Seven vendored test
+demo releases and exact dependency pins start at `0.1.0`. After initial publication,
+plugins and workflows may [evolve independently](authoring.md#plugin-version-policy);
+demo pins must match the respective local manifests. Runtime compatibility is a
+separate tested baseline, not implied by matching version numbers. Seven vendored test
 schemas match the public commit byte-for-byte; [provenance](../tests/contracts/README.md)
 records their paths and hashes. Schema equality is not installed acceptance.
 
@@ -42,8 +45,9 @@ and approving trust for the exact selected bytes.
 The [runtime-bundled shell](https://github.com/transist-ai/transist/tree/v0.1.0/plugins/shell)
 and [companion shell](../plugins/shell/README.md) have separate payload identities.
 Do not interchange bytes or signatures. Selected-byte changes require a new
-digest and, for governed use, a matching signature; keep the fixed `0.1.0`
-identity and validate in a fresh home without overwriting existing installs.
+digest and, for governed use, a matching signature. After initial publication,
+also bump the affected plugin version and validate in a fresh home without
+overwriting existing installs.
 
 ## Historical evidence
 
