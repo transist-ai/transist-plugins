@@ -4,6 +4,7 @@
   "required": ["base_url", "model"],
   "oneOf": [{"required": ["messages"]}, {"required": ["user_text_file"]}],
   "dependentSchemas": {"system_prompt": {"required": ["user_text_file"]}},
+  "not": {"required": ["max_tokens", "max_completion_tokens"]},
   "properties": {
     "base_url": {"type": "string", "minLength": 1},
     "model": {"type": "string", "minLength": 1, "maxLength": 256},
@@ -23,6 +24,7 @@
       }
     },
     "max_tokens": {"type": "integer", "minimum": 1, "maximum": 4096},
+    "max_completion_tokens": {"type": "integer", "minimum": 1, "maximum": 4096},
     "timeout_ms": {"type": "integer", "minimum": 1, "maximum": 120000},
     "secret_refs": {"type": "array", "items": {"type": "string", "const": "OPENAI_COMPATIBLE_API_KEY"}, "minItems": 1, "maxItems": 1}
   },

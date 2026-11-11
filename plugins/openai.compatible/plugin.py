@@ -48,6 +48,7 @@ def validate_input(value, request=None):
         "model",
         "messages",
         "max_tokens",
+        "max_completion_tokens",
         "timeout_ms",
         "secret_refs",
         "user_text_file",
@@ -114,8 +115,15 @@ def validate_input(value, request=None):
             raise PluginError("validation_error", "invalid message")
     if sum(len(item["content"].encode("utf-8")) for item in messages) > limit:
         raise PluginError("validation_error", "prompt exceeds max_prompt_bytes")
+    if "max_tokens" in value and "max_completion_tokens" in value:
+        raise PluginError(
+            "validation_error", "token limit fields are mutually exclusive"
+        )
+    token_field = (
+        "max_completion_tokens" if "max_completion_tokens" in value else "max_tokens"
+    )
     for name, default, maximum in (
-        ("max_tokens", 256, 4096),
+        (token_field, 256, 4096),
         ("timeout_ms", 30000, 120000),
     ):
         number = value.get(name, default)
@@ -126,7 +134,7 @@ def validate_input(value, request=None):
         {
             "model": model,
             "messages": messages,
-            "max_tokens": value.get("max_tokens", 256),
+            token_field: value.get(token_field, 256),
             "stream": False,
         },
         ensure_ascii=False,
@@ -364,6 +372,8 @@ def perform_request(endpoint, body, timeout_ms, secret, policy):
         raise PluginError("transport_error", "provider connection failed") from exc
     finally:
         ACTIVE_SOCKET = None
+        if conn is not None:
+            conn.close()
         raw.close()
 
 

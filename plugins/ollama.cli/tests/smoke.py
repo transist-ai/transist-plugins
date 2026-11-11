@@ -43,7 +43,7 @@ def build_binary(target_dir: str) -> str:
     """Build the Go binary into target_dir and return its path."""
     binary_path = os.path.join(target_dir, BINARY_NAME)
     result = subprocess.run(
-        ["go", "build", "-o", binary_path, "./cmd/plugin"],
+        ["sh", str(ROOT / "build.sh"), binary_path],
         cwd=str(ROOT),
         capture_output=True,
         text=True,
@@ -51,32 +51,8 @@ def build_binary(target_dir: str) -> str:
     )
     if result.returncode != 0:
         raise AssertionError(
-            f"go build failed:\nstdout: {result.stdout}\nstderr: {result.stderr}"
+            f"plugin build failed:\nstdout: {result.stdout}\nstderr: {result.stderr}"
         )
-    if sys.platform == "darwin":
-        # Some older Go/cgo + current Apple linker combinations leave an invalid
-        # linker-signed Mach-O. Repair only this uniquely built TEMPORARY fixture;
-        # this is OS ad-hoc signing, never Transist publisher/trust signing.
-        verify = ["/usr/bin/codesign", "--verify", "--strict", binary_path]
-        checked = subprocess.run(verify, capture_output=True, text=True, timeout=10)
-        if checked.returncode:
-            if (
-                not pathlib.Path(binary_path)
-                .resolve()
-                .is_relative_to(pathlib.Path("/tmp").resolve())
-            ):
-                raise AssertionError(
-                    "OS signature repair is restricted to /tmp fixtures"
-                )
-            print("Repairing temporary Mach-O ad-hoc OS signature", flush=True)
-            subprocess.run(
-                ["/usr/bin/codesign", "--force", "--sign", "-", binary_path],
-                capture_output=True,
-                text=True,
-                timeout=10,
-                check=True,
-            )
-            subprocess.run(verify, capture_output=True, timeout=10, check=True)
     return binary_path
 
 

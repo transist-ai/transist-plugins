@@ -44,7 +44,18 @@ with:
 
 Workflows also pass `secret_refs: [OPENAI_COMPATIBLE_API_KEY]` for runtime
 binding; this metadata is not sent to the provider.
-`max_tokens` defaults to 256 (maximum 4096); `timeout_ms` defaults to 30000
+Choose exactly one token-limit field when specifying a limit: `max_tokens` for
+providers/models supporting the legacy parameter, or `max_completion_tokens` for
+models requiring it (including the tested OpenAI `gpt-6-luna` request). Both accept
+integers from 1 to 4096; supplying both fails validation before network transport.
+The chosen field is forwarded unchanged, without model-name inference or fallback
+requests. If neither is supplied, the request retains `max_tokens: 256` for
+existing callers. Completion-token budgets can include reasoning tokens and do
+not guarantee that a nonempty visible answer will fit.
+This source patch retains `0.1.0`; preceding published/signed `0.1.0` packages do
+not accept `max_completion_tokens`. Validate changed bytes in an isolated home;
+do not overwrite an installed payload or reuse its preceding publisher signature.
+`timeout_ms` defaults to 30000
 (maximum 120000). At most 64 messages, 64 KiB per message, 256 KiB
 serialized request and 1 MiB response are accepted. Unknown fields fail.
 Success returns `response_text`, optionally `finish_reason`, `response_id`,
@@ -96,6 +107,7 @@ key or provider credential ships with the example.
 
 `workflow.yaml` supplies `openai_compatible_demo@0.1.0`, pinned to plugin 0.1.0.
 Only `model` and `prompt` are required. The default endpoint is OpenRouter;
+the demo selects `max_completion_tokens: 256`, requiring a compatible model.
 when overriding `base_url`, edit the demo's step-scoped network allowlist to
 match the provider host and port. Resolve `OPENAI_COMPATIBLE_API_KEY` through runtime
 secret configuration before running. Use a disposable standalone home:

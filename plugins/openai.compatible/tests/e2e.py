@@ -272,6 +272,8 @@ steps:
         self.assertEqual(json.loads(show)["status"], "success", show)
         self.assertIn("supplied demo response", show, show)
         self.assertEqual(self.server.requests[-1][1]["model"], "test-model")
+        self.assertEqual(self.server.requests[-1][1]["max_completion_tokens"], 256)
+        self.assertNotIn("max_tokens", self.server.requests[-1][1])
         self.assertEqual(
             self.server.requests[-1][1]["messages"],
             [{"role": "user", "content": "required-only prompt"}],

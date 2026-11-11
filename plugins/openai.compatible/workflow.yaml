@@ -29,3 +29,4 @@ steps:
         - role: user
           content: "{{inputs.prompt}}"
       secret_refs: [OPENAI_COMPATIBLE_API_KEY]
+      max_completion_tokens: 256

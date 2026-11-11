@@ -1,6 +1,6 @@
 # ollama.cli
 
-Package version: `0.1.0`.
+Package version: `0.1.1`.
 
 `process` plugin for local LLM generation via the [Ollama](https://ollama.com) CLI.
 
@@ -13,7 +13,7 @@ sequences and spinner noise in stderr are stripped automatically.
 ## Runtime Capabilities And Endpoints
 
 - Adapter: `process`.
-- Capability grants: adapter invoke, `plugin:ollama.cli@0.1.0` load, and `action:ollama.cli@0.1.0/generate` invoke.
+- Capability grants: adapter invoke, `plugin:ollama.cli@0.1.1` load, and `action:ollama.cli@0.1.1/generate` invoke.
 
 The manifest requires `ollama` on `PATH`; Go is a build/test prerequisite only.
 - Secrets: none declared by the plugin.
@@ -35,15 +35,22 @@ The manifest requires `ollama` on `PATH`; Go is a build/test prerequisite only.
 From the repository root, build inside the package's Go module:
 
 ```bash
-(cd plugins/ollama.cli && go build -o ./bin/ollama.cli ./cmd/plugin)
+sh plugins/ollama.cli/build.sh /absolute/unused/path/ollama.cli
 ```
+
+The output path must not exist. On macOS the build verifies the executable's OS
+signature, repairs an invalid signature with an ad-hoc signature, and verifies it
+again before publishing the output. This uses no publisher private key. Complete
+OS signing before computing the package digest or creating a Transist publisher
+signature; never modify a signed or installed payload in place.
 
 ## Install
 
 From the repository root:
 
 ```bash
-(cd plugins/ollama.cli && go build -o ./bin/ollama.cli ./cmd/plugin)
+mkdir -p plugins/ollama.cli/bin
+sh plugins/ollama.cli/build.sh "$PWD/plugins/ollama.cli/bin/ollama.cli"
 transist plugins install --path ./plugins/ollama.cli
 ```
 
@@ -52,8 +59,8 @@ transist plugins install --path ./plugins/ollama.cli
 ```bash
 transist workflows check --path ./plugins/ollama.cli/workflow.yaml
 transist workflows install --path ./plugins/ollama.cli/workflow.yaml
-transist workflows check ollama_cli_demo@0.1.0 --inputs-file <inputs-file> --output readiness.json
-transist workflows run ollama_cli_demo@0.1.0 --run-ref demo --inputs-file <inputs-file> --readiness-file readiness.json
+transist workflows check ollama_cli_demo@0.1.1 --inputs-file <inputs-file> --output readiness.json
+transist workflows run ollama_cli_demo@0.1.1 --run-ref demo --inputs-file <inputs-file> --readiness-file readiness.json
 ```
 
 ## Actions
@@ -237,10 +244,8 @@ The normal native test binary was independently compiled under a unique `/tmp`
 directory, signature-repaired and run with `-test.v`; all tests passed. See
 `/tmp/ollama-lifecycle-native-normal-tests.log`.
 
-The smoke builds uniquely under `/tmp`, verifies Darwin signatures, and repairs
-only an invalid signature on its temporary binary before testing actual APP
-execution. The runtime sources do not invoke signing or change trust. Production
-builds still need a valid native OS signature on macOS; temporary ad-hoc OS
+The smoke builds uniquely under `/tmp` using `build.sh` before testing actual APP
+execution. The runtime sources do not invoke signing or change trust. Ad-hoc OS
 signing is distinct from Transist publisher signing and grants no publisher trust.
 The harness always kills its isolated outer fixture group, closes pipes and reaps
 the leader on success, JSON errors, cancellation and deadlines. Production

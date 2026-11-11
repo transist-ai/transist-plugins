@@ -16,7 +16,7 @@ import (
 const (
 	appProtocol           = "app.v1"
 	pluginID              = "ollama.cli"
-	pluginVersion         = "0.1.0"
+	pluginVersion         = "0.1.1"
 	defaultTimeoutSeconds = 300
 	maxScannerBufSize     = 4 * 1024 * 1024 // 4 MB
 )

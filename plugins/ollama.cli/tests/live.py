@@ -5,7 +5,7 @@ Live integration test for the ollama.cli plugin.
 Requires:
   - ollama installed and in PATH
   - at least one model pulled (ollama list)
-  - the plugin binary built: go build -o ./bin/ollama.cli ./cmd/plugin
+  - the plugin binary built: sh build.sh "$PWD/bin/ollama.cli"
 
 Skipped gracefully when any prerequisite is absent.
 """
@@ -56,17 +56,18 @@ def find_or_build_binary():
     if go_bin is None:
         skip(
             "ollama.cli binary not built and go not found in PATH; "
-            "run: go build -o ./bin/ollama.cli ./cmd/plugin"
+            'run: sh build.sh "$PWD/bin/ollama.cli"'
         )
+    candidate.parent.mkdir(parents=True, exist_ok=True)
     result = subprocess.run(
-        ["go", "build", "-o", str(candidate), "./cmd/plugin"],
+        ["sh", str(ROOT / "build.sh"), str(candidate)],
         cwd=str(ROOT),
         capture_output=True,
         text=True,
         timeout=120,
     )
     if result.returncode != 0:
-        raise AssertionError(f"go build failed:\n{result.stderr}")
+        raise AssertionError(f"plugin build failed:\n{result.stderr}")
     return str(candidate)
 
 
