@@ -220,8 +220,8 @@ class _DarwinTree:
         self.native: dict[int, _UniqueInfo] = {}
         own = _unique_info(os.getpid())
         self.floor = own.unique
-        # launchd is outside the same-UID census. Its immutable generation can
-        # exclude newly launched foreign services, never authorize their signals.
+        # Immutable foreign generations only exclude unrelated services; they
+        # never authorize signals or add a process to the owned ledger.
         init = _unique_info(1)
         self.foreign_versions = (
             {init.version} if init is not None and init.unique < self.floor else set()
@@ -283,14 +283,18 @@ class _DarwinTree:
                 self.versions[unique.version] = unique.unique
             elif unique is not None:
                 self.uncertain.add(pid)
-        # Only opaque same-UID identities are examined. XNU records the original
+        # Only opaque native identities are examined. XNU records the original
         # parent's global pid-version at fork and does not change it on setsid,
         # exec or reparenting. An unobserved, reaped intermediate still leaves a
         # gap: its descendants must remain unclassified, never silently unowned.
         buffer = (ctypes.c_int * (MAX_CHILDREN + 1))()
-        count = self.lib.proc_listpids(4, os.geteuid(), buffer, ctypes.sizeof(buffer))
+        # A same-UID-only snapshot loses foreign ancestry across a UID change
+        # (for example a root service's ordinary-user worker). Include numeric
+        # generations for all UIDs; ownership still requires the exact admitted
+        # CLI lineage and revalidated native births below, never UID membership.
+        count = self.lib.proc_listpids(1, 0, buffer, ctypes.sizeof(buffer))
         if count < 0 or count >= ctypes.sizeof(buffer):
-            raise RuntimeError("Darwin same-UID generation census truncated")
+            raise RuntimeError("Darwin native generation census truncated")
         candidates = []
         foreign_versions = set(self.foreign_versions)
         self.census_gaps = 0
@@ -355,7 +359,7 @@ class _DarwinTree:
             after = process_identity(parent.pid)
             if after is None or after.birth != parent.birth:
                 # A vanished parent is resolved through its saved original
-                # generation by the same-UID lineage census, not a bare PID.
+                # generation by the native lineage census, not a bare PID.
                 if after is not None:
                     self.uncertain.add(parent.pid)
                 continue
@@ -377,7 +381,7 @@ class _DarwinTree:
                     self.add(final_child)
                     pending.append(final_child)
         # NOTE_FORK coalesces: even a matched child edge cannot account for every
-        # fork or a reaped intermediate. Partition the complete same-UID snapshot
+        # fork or a reaped intermediate. Partition the complete native snapshot
         # instead. Pre-supervisor births cannot descend from the admitted CLI;
         # propagate that exclusion only through immutable original-parent
         # versions. Unknown lineage grants no signalling authority. This may
@@ -401,11 +405,19 @@ class _DarwinTree:
             {
                 "pid": pid,
                 "birth": unique.unique,
+                "version": unique.version,
+                "parent_birth": unique.parent_unique,
                 "original_parent_version": unique.original_parent_version,
             }
             for pid, unique in candidates
             if pid not in self.known and unique.version not in foreign_versions
         ]
+        # Exclusion is generation evidence too. A foreign parent may exit or exec
+        # between snapshots while its child retains the original fork version.
+        # Retain only proved exclusions; unknown intermediates stay unresolved.
+        if len(foreign_versions) > MAX_CHILDREN:
+            raise RuntimeError("Darwin foreign generation ledger budget exceeded")
+        self.foreign_versions = foreign_versions
         live = []
         for pid, known in self.known.items():
             if pid in self.exited:
@@ -566,6 +578,21 @@ def _verified_children(
                     error.fixture_process_observation = _process_observation(
                         parent, first
                     )
+                    # Linux 6.1 pidfd_create also returns EINVAL when its retained
+                    # struct pid loses its last TGID task during pidfd_open. Do
+                    # not infer a thread/leader mapping or retry a numeric PID.
+                    # Require fresh, successful native absence and revalidate the
+                    # pinned parent. Denied inspection and every live birth still
+                    # propagate the original pin failure without adoption/signals.
+                    if process_identity(pid) is None:
+                        final_parent = process_identity(parent.pid)
+                        if final_parent is None:
+                            break
+                        if final_parent.birth != parent.birth:
+                            raise RuntimeError(
+                                "fixture parent identity changed after child exit"
+                            ) from error
+                        continue
                 raise
             try:
                 final_parent = process_identity(parent.pid)

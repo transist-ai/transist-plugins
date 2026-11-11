@@ -458,6 +458,158 @@ class NamespacePeerTests(unittest.TestCase):
         self.assertEqual(tree.census_gaps, 0)
         sleep.assert_called_once_with(0.005)
 
+    def test_darwin_observed_foreign_parent_exit_preserves_exclusion(self) -> None:
+        """A native unrelated orphan stays excluded by its observed fork generation."""
+        if sys.platform != "darwin":
+            return  # Native libproc contract; Linux has subreaper ownership instead.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            parent_ready, census_ready, spawned, proved, reaped = (
+                root / name
+                for name in (
+                    "parent-ready",
+                    "census-ready",
+                    "spawned",
+                    "proved",
+                    "reaped",
+                )
+            )
+            parent_program = f"""
+import json, os, subprocess, sys, time
+from pathlib import Path
+def wait(path):
+    end = time.monotonic() + 5
+    while not path.exists():
+        if time.monotonic() >= end: raise RuntimeError('foreign parent deadline')
+        time.sleep(.001)
+Path({str(parent_ready)!r}).touch()
+wait(Path({str(census_ready)!r}))
+child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(8)'])
+Path({str(spawned)!r}).write_text(json.dumps(child.pid))
+wait(Path({str(proved)!r}))
+"""
+            source = namespace_peers.SOURCE_BYTES
+            probe_program = f"""
+import hashlib, json, sys, time
+from pathlib import Path
+sys.path.insert(0, {str(Path(__file__).parent)!r})
+import namespace_peers as loader
+source = {source!r}
+loaded = loader.load_from_source(source, hashlib.sha256(source).hexdigest(), 'probe')
+tree = loaded._DarwinTree()
+try:
+    tree.census()
+    Path({str(census_ready)!r}).touch()
+    end = time.monotonic() + 5
+    while not Path({str(reaped)!r}).exists():
+        if time.monotonic() >= end: raise RuntimeError('foreign probe deadline')
+        time.sleep(.001)
+    tree.census()
+    pid = json.loads(Path({str(spawned)!r}).read_text())
+    identity = loaded._unique_info(pid)
+    assert identity is not None
+    assert identity.version in tree.foreign_versions
+    assert pid not in tree.known
+    assert not any(item['pid'] == pid for item in tree.unresolved)
+    print(json.dumps({{'foreign_pid':pid, 'birth':identity.unique,
+                      'original_parent_version':identity.original_parent_version,
+                      'known':list(tree.known), 'unresolved':tree.unresolved}}))
+finally:
+    tree.close()
+"""
+            parent = subprocess.Popen([sys.executable, "-c", parent_program])
+            probe = None
+            writer = None
+            try:
+                end = time.monotonic() + 5
+                while not parent_ready.exists():
+                    self.assertLess(time.monotonic(), end)
+                    time.sleep(0.001)
+                parent_identity = process_identity(parent.pid)
+                parent_unique = namespace_peers._unique_info(parent.pid)
+                self.assertEqual(parent_unique.unique, parent_identity.birth)
+                probe = subprocess.Popen(
+                    [sys.executable, "-c", probe_program],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+                while not spawned.exists() or not spawned.stat().st_size:
+                    self.assertLess(time.monotonic(), end)
+                    time.sleep(0.001)
+                pid = json.loads(spawned.read_text())
+                first = process_identity(pid)
+                unique = namespace_peers._unique_info(pid)
+                self.assertEqual(first.parent, parent.pid)
+                self.assertEqual(process_identity(parent.pid), parent_identity)
+                self.assertEqual(process_identity(pid), first)
+                self.assertEqual(unique.unique, first.birth)
+                self.assertEqual(unique.original_parent_version, parent_unique.version)
+                writer = first
+                proved.touch()
+                self.assertEqual(parent.wait(timeout=2), 0)
+                reaped.touch()
+                stdout, stderr = probe.communicate(timeout=5)
+                self.assertEqual(probe.returncode, 0, stderr)
+                report = json.loads(stdout)
+                self.assertEqual(report["birth"], writer.birth)
+                self.assertEqual(report["known"], [])
+                print("FOREIGN_ORPHAN " + stdout.strip(), flush=True)
+            finally:
+                proved.touch()
+                reaped.touch()
+                if parent.poll() is None:
+                    parent.kill()  # Unreaped direct Popen child owned by this test.
+                parent.wait(timeout=2)
+                if probe is not None:
+                    if probe.poll() is None:
+                        probe.kill()  # Unreaped direct Popen child, not a PID lookup.
+                    probe.communicate(timeout=2)
+                if writer is not None:
+                    current = process_identity(writer.pid)
+                    unique = namespace_peers._unique_info(writer.pid)
+                    if current is not None and current.state not in ("Z", "X"):
+                        self.assertEqual(current.birth, writer.birth)
+                        self.assertEqual(unique.unique, writer.birth)
+                        token = (ctypes.c_uint32 * 8)()
+                        token[5], token[7] = writer.pid, unique.version & 0xFFFFFFFF
+                        self.assertIn(
+                            namespace_peers._darwin_lib().proc_signal_with_audittoken(
+                                token, signal.SIGKILL
+                            ),
+                            (0, errno.ESRCH),
+                        )
+
+    def test_darwin_exclusion_census_includes_cross_uid_original_ancestry(self) -> None:
+        """Foreign ancestry across a UID change excludes without granting ownership."""
+        tree = object.__new__(namespace_peers._DarwinTree)
+        tree.queue = SimpleNamespace(control=mock.Mock(return_value=[]))
+        tree.known, tree.native, tree.versions = {}, {}, {}
+        tree.exited, tree.forked, tree.uncertain = set(), set(), set()
+        tree.foreign_versions, tree.floor = set(), 100
+        generations = {
+            10: SimpleNamespace(unique=90, version=7, original_parent_version=1),
+            11: SimpleNamespace(unique=110, version=8, original_parent_version=7),
+            12: SimpleNamespace(unique=120, version=9, original_parent_version=8),
+        }
+
+        def listpids(kind: int, value: int, buffer: object, size: int) -> int:
+            """Model root ancestor/service and ordinary-user child native metadata."""
+            self.assertEqual((kind, value), (1, 0))
+            for index, pid in enumerate(generations):
+                buffer[index] = pid
+            return 3 * ctypes.sizeof(ctypes.c_int)
+
+        tree.lib = SimpleNamespace(proc_listpids=listpids)
+        with mock.patch.object(
+            namespace_peers, "_unique_info", side_effect=generations.get
+        ), mock.patch.object(namespace_peers, "process_identity") as inspect:
+            self.assertEqual(tree.census(), [])
+        self.assertEqual(tree.foreign_versions, {7, 8, 9})
+        self.assertEqual(tree.known, {})
+        self.assertEqual(tree.unresolved, [])
+        inspect.assert_not_called()
+
     def test_final_darwin_census_persistent_gaps_keep_existing_deadline(self) -> None:
         """Persistent gaps stay uncertain within the original cleanup budget."""
         tree = SimpleNamespace(
@@ -542,7 +694,7 @@ class NamespacePeerTests(unittest.TestCase):
         with mock.patch.object(
             namespace_peers,
             "process_identity",
-            side_effect=[parent, parent, child, observed, after],
+            side_effect=[parent, parent, child, observed, after, after],
         ), mock.patch.object(
             namespace_peers, "_child_pids", return_value=[child.pid]
         ), mock.patch.object(
@@ -614,7 +766,7 @@ class NamespacePeerTests(unittest.TestCase):
                 with mock.patch.object(
                     namespace_peers,
                     "process_identity",
-                    side_effect=[parent, parent, child, before, after],
+                    side_effect=[parent, parent, child, before, after, child],
                 ), mock.patch.object(
                     namespace_peers, "_child_pids", return_value=[child.pid]
                 ), mock.patch.object(
@@ -644,6 +796,52 @@ class NamespacePeerTests(unittest.TestCase):
                     )
                 )
                 self.assertEqual(pidfd_open.call_count, 2)
+                accept.assert_not_called()
+                close.assert_called_once_with(42)
+
+    def test_exited_child_einval_requires_native_absence_and_stable_parent(
+        self,
+    ) -> None:
+        """Classify only a vanished child; live/reused/denied targets remain errors."""
+        parent = Process(900001, 100, 1, "S")
+        child = Process(900002, 200, parent.pid, "S")
+        for current, final_parent, expected in (
+            (None, parent, None),
+            (None, None, None),
+            (None, Process(parent.pid, 101, 1, "S"), RuntimeError),
+            (child, parent, OSError),
+            (Process(child.pid, 201, parent.pid, "S"), parent, OSError),
+            (PermissionError("inspection denied"), parent, PermissionError),
+        ):
+            with self.subTest(current=current, final_parent=final_parent):
+                failure = OSError(errno.EINVAL, "pin failed")
+                accept = mock.Mock()
+                with mock.patch.object(
+                    namespace_peers,
+                    "process_identity",
+                    side_effect=[parent, parent, child, current, final_parent],
+                ), mock.patch.object(
+                    namespace_peers, "_child_pids", return_value=[child.pid]
+                ), mock.patch.object(
+                    namespace_peers, "_process_observation", return_value={}
+                ), mock.patch.object(
+                    namespace_peers.os,
+                    "pidfd_open",
+                    side_effect=[42, failure],
+                    create=True,
+                ) as pin, mock.patch.object(
+                    namespace_peers.os, "close"
+                ) as close:
+                    if expected is None:
+                        self.assertEqual(
+                            namespace_peers._verified_children(parent, accept), []
+                        )
+                    else:
+                        with self.assertRaises(expected):
+                            namespace_peers._verified_children(parent, accept)
+                self.assertEqual(
+                    pin.call_args_list, [mock.call(parent.pid), mock.call(child.pid)]
+                )
                 accept.assert_not_called()
                 close.assert_called_once_with(42)
 
