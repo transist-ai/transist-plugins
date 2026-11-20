@@ -1,4 +1,4 @@
-# `openai.compatible` (0.1.0)
+# `openai.compatible` (0.1.1)
 
 Reference `process` plugin for non-streaming OpenAI-compatible Chat Completions.
 The action `chat_complete` is explicitly **external**. Its `base_url` is the
@@ -52,7 +52,7 @@ The chosen field is forwarded unchanged, without model-name inference or fallbac
 requests. If neither is supplied, the request retains `max_tokens: 256` for
 existing callers. Completion-token budgets can include reasoning tokens and do
 not guarantee that a nonempty visible answer will fit.
-This source patch retains `0.1.0`; preceding published/signed `0.1.0` packages do
+Version `0.1.1` adds this support; preceding published `0.1.0` packages do
 not accept `max_completion_tokens`. Validate changed bytes in an isolated home;
 do not overwrite an installed payload or reuse its preceding publisher signature.
 `timeout_ms` defaults to 30000
@@ -105,7 +105,7 @@ key or provider credential ships with the example.
 
 ## Supplied workflow
 
-`workflow.yaml` supplies `openai_compatible_demo@0.1.0`, pinned to plugin 0.1.0.
+`workflow.yaml` supplies `openai_compatible_demo@0.1.1`, pinned to plugin 0.1.1.
 Only `model` and `prompt` are required. The default endpoint is OpenRouter;
 the demo selects `max_completion_tokens: 256`, requiring a compatible model.
 when overriding `base_url`, edit the demo's step-scoped network allowlist to
@@ -118,8 +118,8 @@ transist --home "$DEMO_HOME" home init --mode standalone
 transist --home "$DEMO_HOME" plugins install --path plugins/openai.compatible/plugin.yaml
 transist --home "$DEMO_HOME" workflows check --path plugins/openai.compatible/workflow.yaml
 transist --home "$DEMO_HOME" workflows install --path plugins/openai.compatible/workflow.yaml --approve
-transist --home "$DEMO_HOME" workflows check openai_compatible_demo@0.1.0 --input model=your-model --input prompt=hello --live
-transist --home "$DEMO_HOME" workflows run openai_compatible_demo@0.1.0 --input model=your-model --input prompt=hello
+transist --home "$DEMO_HOME" workflows check openai_compatible_demo@0.1.1 --input model=your-model --input prompt=hello --live
+transist --home "$DEMO_HOME" workflows run openai_compatible_demo@0.1.1 --input model=your-model --input prompt=hello
 ```
 
 Enable process secret delivery in that home's `config.yaml` before readiness

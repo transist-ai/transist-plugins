@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from file_io import data_path, read_bytes, write_bytes  # noqa: E402
 
 PLUGIN_ID = "openai.compatible"
-PLUGIN_VERSION = "0.1.0"
+PLUGIN_VERSION = "0.1.1"
 SECRET_NAME = "OPENAI_COMPATIBLE_API_KEY"
 MAX_REQUEST = 256 * 1024
 MAX_RESPONSE = 1024 * 1024

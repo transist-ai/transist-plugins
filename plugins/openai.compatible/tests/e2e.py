@@ -98,7 +98,7 @@ class InstalledWorkflowTests(unittest.TestCase):
 id: openai_compatible_offline
 version: 0.1.0
 plugins:
-  openai.compatible: 0.1.0
+  openai.compatible: 0.1.1
 network:
   mode: none
 steps:
@@ -256,7 +256,7 @@ steps:
         self.run_command(
             "workflows",
             "run",
-            "openai_demo_fixture@0.1.0",
+            "openai_demo_fixture@0.1.1",
             "--run-ref",
             run_id,
             "--input",
