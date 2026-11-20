@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -22,7 +24,7 @@ SPEC.loader.exec_module(SMOKE)
 
 
 class BuildTests(unittest.TestCase):
-    """Ensure the release build never replaces an existing artifact."""
+    """Ensure release payloads are immutable and executable after copying."""
 
     def test_existing_output_is_preserved(self) -> None:
         """A preexisting output fails before compilation and remains unchanged."""
@@ -38,6 +40,54 @@ class BuildTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("Refusing to overwrite", result.stderr)
             self.assertEqual(output.read_bytes(), b"existing")
+
+    def test_published_binary_survives_package_copy(self) -> None:
+        """The real build must handshake before and after byte-preserving install."""
+        with tempfile.TemporaryDirectory(prefix="ollama-build-test-", dir="/tmp") as d:
+            root = Path(d)
+            binary = Path(SMOKE.build_binary(d))
+            installed = root / "installed" / "bin" / "ollama.cli"
+            installed.parent.mkdir(parents=True)
+            shutil.copyfile(binary, installed)
+            installed.chmod(binary.stat().st_mode)
+            self.assertEqual(binary.read_bytes(), installed.read_bytes())
+            manifest = next(
+                line.removeprefix("version: ")
+                for line in (PACKAGE / "plugin.yaml").read_text().splitlines()
+                if line.startswith("version: ")
+            )
+            for payload in (binary, installed):
+                with self.subTest(payload=payload.name, installed=payload == installed):
+                    if sys.platform == "darwin":
+                        signature = subprocess.run(
+                            ["/usr/bin/codesign", "--verify", "--strict", str(payload)],
+                            capture_output=True,
+                            text=True,
+                            timeout=10,
+                        )
+                        self.assertEqual(signature.returncode, 0, signature.stderr)
+                    result = subprocess.run(
+                        [str(payload)],
+                        input=json.dumps(
+                            {
+                                "type": "app.handshake.request.v1",
+                                "protocol_version": "app.v1",
+                            }
+                        )
+                        + "\n",
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                    )
+                    # EOF after discovery is intentional: no model is invoked.
+                    self.assertEqual(result.returncode, 1, result.stderr)
+                    self.assertEqual(result.stderr, "")
+                    response = json.loads(result.stdout)
+                    self.assertEqual(response["type"], "app.handshake.response.v1")
+                    self.assertEqual(response["protocol_version"], "app.v1")
+                    self.assertEqual(
+                        response["plugin"], {"id": "ollama.cli", "version": manifest}
+                    )
 
 
 class SmokeCleanupTests(unittest.TestCase):
