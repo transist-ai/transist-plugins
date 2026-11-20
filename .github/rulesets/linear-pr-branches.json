@@ -1,0 +1,22 @@
+{
+  "name": "linear-pr-branches",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "exclude": [
+        "~DEFAULT_BRANCH",
+        "refs/heads/main"
+      ],
+      "include": [
+        "~ALL"
+      ]
+    }
+  },
+  "rules": [
+    {
+      "type": "required_linear_history"
+    }
+  ],
+  "bypass_actors": []
+}
