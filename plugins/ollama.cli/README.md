@@ -1,6 +1,6 @@
 # ollama.cli
 
-Package version: `0.1.1`.
+Package version: `0.1.2`.
 
 `process` plugin for local LLM generation via the [Ollama](https://ollama.com) CLI.
 
@@ -13,7 +13,7 @@ sequences and spinner noise in stderr are stripped automatically.
 ## Runtime Capabilities And Endpoints
 
 - Adapter: `process`.
-- Capability grants: adapter invoke, `plugin:ollama.cli@0.1.1` load, and `action:ollama.cli@0.1.1/generate` invoke.
+- Capability grants: adapter invoke, `plugin:ollama.cli@0.1.2` load, and `action:ollama.cli@0.1.2/generate` invoke.
 
 The manifest requires `ollama` on `PATH`; Go is a build/test prerequisite only.
 - Secrets: none declared by the plugin.
@@ -44,6 +44,27 @@ again before publishing the output. This uses no publisher private key. Complete
 OS signing before computing the package digest or creating a Transist publisher
 signature; never modify a signed or installed payload in place.
 
+### macOS startup failure and release adoption
+
+`ollama list` succeeding does not validate this separate wrapper executable. A
+wrapper killed before its APP handshake can have an invalid embedded Mach-O
+signature, especially with Go/cgo and the Apple linker. Verify the exact wrapper
+with `codesign --verify --strict /path/to/bin/ollama.cli`; SIGKILL alone does not
+identify its cause. Do not repair a signed or installed payload with `codesign`.
+
+Release `0.1.2` gives the rebuilt payload a new immutable identity. Use `build.sh`
+to create it at a **new output path**; do not reuse an older ignored `bin/ollama.cli`
+or bypass the script with raw `go build`. Stage that verified output with the
+current manifest and schemas, then compute/sign the Transist package digest.
+Install and validate in a fresh home and update workflow pins deliberately.
+Preserve older packages/homes for pinned runs and rollback. macOS ad-hoc signing
+is not publisher trust, notarization, or authorization to change runtime policy.
+
+The offline build regression checks the final published executable and a
+byte-preserving package copy using actual APP discovery. On macOS it also
+verifies both OS signatures. These checks do not call a model or prove live
+Ollama generation or governed trust.
+
 ## Install
 
 From the repository root:
@@ -59,8 +80,8 @@ transist plugins install --path ./plugins/ollama.cli
 ```bash
 transist workflows check --path ./plugins/ollama.cli/workflow.yaml
 transist workflows install --path ./plugins/ollama.cli/workflow.yaml
-transist workflows check ollama_cli_demo@0.1.1 --inputs-file <inputs-file> --output readiness.json
-transist workflows run ollama_cli_demo@0.1.1 --run-ref demo --inputs-file <inputs-file> --readiness-file readiness.json
+transist workflows check ollama_cli_demo@0.1.2 --inputs-file <inputs-file> --output readiness.json
+transist workflows run ollama_cli_demo@0.1.2 --run-ref demo --inputs-file <inputs-file> --readiness-file readiness.json
 ```
 
 ## Actions
