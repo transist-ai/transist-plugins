@@ -33,7 +33,7 @@ def main():
         code, frames, stderr = run_process_plugin_subprocess(ROOT, request)
     assert code == 0 and not stderr, (code, stderr)
     handshake, response = assert_app_frames(frames, "openai.compatible")
-    assert handshake["plugin"]["version"] == "0.1.0"
+    assert handshake["plugin"]["version"] == "0.1.1"
     assert handshake["capabilities"]["actions"] == ["chat_complete"]
     assert_canonical_error(response["error"], "validation_error")
     try:

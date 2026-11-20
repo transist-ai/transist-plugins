@@ -1,8 +1,8 @@
 schema: transist.flow.v1
 id: openai_compatible_demo
-version: 0.1.0
+version: 0.1.1
 plugins:
-  openai.compatible: 0.1.0
+  openai.compatible: 0.1.1
 inputs:
   model:
     type: string
