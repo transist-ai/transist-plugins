@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -10,6 +11,8 @@ import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
+
+from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT.parents[1] / "tests"))
@@ -51,11 +54,11 @@ class InstructionComments(unittest.TestCase):
         self.git("add", "-f", "--", name)
         return path
 
-    def invoke(self, output: Path, mode: str = "legacy") -> dict:
+    def invoke(self, output: Path, mode: str = "legacy", **inputs: object) -> dict:
         """Invoke actual APP handling and validate native decision/output schemas."""
         request = support.app_invoke_request(
             "scan_instruction_comments",
-            {"output_file": str(output), "output_mode": mode},
+            {"output_file": str(output), "output_mode": mode, **inputs},
         )
         request["paths"]["workspace_dir"] = str(self.root)
         result = self.plugin.handle_request(request)
@@ -63,6 +66,327 @@ class InstructionComments(unittest.TestCase):
         if result["output"]:
             validator("scan_instruction_comments").validate(result["output"])
         return result
+
+    def commit(self) -> None:
+        """Commit fixture content with an invocation-local identity."""
+        self.git(
+            "-c",
+            "user.name=Fixture",
+            "-c",
+            "user.email=fixture@example.invalid",
+            "commit",
+            "-qm",
+            "fixture",
+        )
+
+    def test_changed_union_scans_full_current_files_and_excludes_unchanged(
+        self,
+    ) -> None:
+        large = self.file("large.bin", "")
+        large.write_bytes(b"\0" * (32 * 1024 * 1024))
+        self.git("add", "large.bin")
+        self.file("old.txt", "# tst: old\n")
+        self.file("deleted.txt", "# tst: deleted\n")
+        self.file("renamed.txt", "# tst: rename\n")
+        self.commit()
+        self.git("branch", "base")
+        self.file("committed.txt", "# tst: committed\n")
+        self.git("mv", "renamed.txt", "moved.txt")
+        self.git("rm", "deleted.txt")
+        self.commit()
+        self.file("staged.txt", "# tst: staged\n")
+        (self.root / "old.txt").write_text("# tst: full file\nchanged line\n")
+        (self.root / "untracked.txt").write_text("# tst: untracked\n")
+        (self.root / ".gitignore").write_text("ignored.txt\n")
+        (self.root / "ignored.txt").write_text("# tst: ignored\n")
+        output = self.root / ".transist" / "context.md"
+        result = self.invoke(output, scope="changed", base_ref="refs/heads/base")
+        self.assertEqual(result["status"], "success")
+        text = output.read_text()
+        for name in (
+            "committed.txt",
+            "staged.txt",
+            "old.txt",
+            "untracked.txt",
+            "moved.txt",
+        ):
+            self.assertIn(name + ":1", text)
+        for name in ("deleted.txt", "large.bin", "ignored.txt"):
+            self.assertNotIn(name, text)
+        self.assertEqual(self.invoke(output)["status"], "failed")
+
+    def test_changed_empty_pr_managed_document_and_invalid_bases(self) -> None:
+        self.file("source.txt", "# tst: unchanged\n")
+        self.commit()
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+        output = self.root / ".transist" / "context.md"
+        with tempfile.TemporaryDirectory() as staging:
+            pr = Path(staging).resolve() / "pr.json"
+            pr.write_text(json.dumps({"pull_request": {"baseRefName": "main"}}))
+            result = self.invoke(
+                output, scope="changed", pr_file=str(pr), remote="origin"
+            )
+            self.assertEqual(result["status"], "success")
+            self.assertFalse(result["output"]["has_comments"])
+            for base in (
+                "--help",
+                "main",
+                "refs/heads/missing",
+                "refs/heads/main^{tree}",
+            ):
+                output.write_text("previous")
+                self.assertEqual(
+                    self.invoke(output, scope="changed", base_ref=base)["status"],
+                    "failed",
+                )
+                self.assertEqual(output.read_text(), "previous")
+            for branch, remote in (
+                ("--help", "origin"),
+                ("main", "--help"),
+                ("../main", "origin"),
+            ):
+                pr.write_text(json.dumps({"pull_request": {"baseRefName": branch}}))
+                self.assertEqual(
+                    self.invoke(
+                        output, scope="changed", pr_file=str(pr), remote=remote
+                    )["status"],
+                    "failed",
+                )
+
+    def test_changed_schema_rejects_invalid_combinations(self) -> None:
+        schema = json.loads(
+            (ROOT / "schemas/scan_instruction_comments.input.schema.json").read_text()
+        )
+        validate = Draft202012Validator(schema)
+        for inputs in (
+            {},
+            {"scope": "tracked"},
+            {"scope": "changed", "base_ref": "refs/heads/main"},
+            {"scope": "changed", "pr_file": "/doc", "remote": "origin"},
+        ):
+            self.assertTrue(validate.is_valid({"output_file": "out", **inputs}))
+        for inputs in (
+            {"base_ref": "refs/heads/main"},
+            {"scope": "changed"},
+            {"scope": "changed", "pr_file": "/doc"},
+            {"scope": "changed", "base_ref": "refs/heads/main", "remote": "origin"},
+            {"scope": "changed", "base_ref": "-bad"},
+            {
+                "scope": "changed",
+                "base_ref": "refs/heads/main",
+                "pr_file": "/doc",
+                "remote": "origin",
+            },
+        ):
+            self.assertFalse(validate.is_valid({"output_file": "out", **inputs}))
+
+    def test_changed_unsafe_names_symlinks_and_bounds_fail_closed(self) -> None:
+        self.file("source.txt", "plain\n")
+        self.commit()
+        self.git("branch", "base")
+        output = self.root / ".transist" / "context.md"
+        output.parent.mkdir()
+        output.write_text("previous")
+        unsafe = self.root / "bad\nname"
+        unsafe.write_text("# tst: unsafe\n")
+        self.assertEqual(
+            self.invoke(output, scope="changed", base_ref="refs/heads/base")["status"],
+            "failed",
+        )
+        unsafe.unlink()
+        (self.root / "link").symlink_to(self.root / "source.txt")
+        self.assertEqual(
+            self.invoke(output, scope="changed", base_ref="refs/heads/base")["status"],
+            "failed",
+        )
+        (self.root / "link").unlink()
+        (self.root / "source.txt").write_text("# tst: changed\n")
+        with patch.object(self.scanner, "MAX_SOURCE_BYTES", 1):
+            self.assertEqual(
+                self.invoke(output, scope="changed", base_ref="refs/heads/base")[
+                    "status"
+                ],
+                "failed",
+            )
+        self.assertEqual(output.read_text(), "previous")
+
+    def test_changed_unrelated_history_fails_without_publication(self) -> None:
+        self.file("source.txt", "plain\n")
+        self.commit()
+        self.git("branch", "base")
+        self.git("checkout", "--orphan", "unrelated")
+        self.file("different.txt", "unrelated\n")
+        self.commit()
+        output = self.root / ".transist" / "context.md"
+        result = self.invoke(output, scope="changed", base_ref="refs/heads/base")
+        self.assertEqual(result["status"], "failed")
+        self.assertFalse(output.exists())
+
+    def test_changed_scans_file_directory_replacements(self) -> None:
+        self.file("to_file/old.txt", "old\n")
+        self.file("to_directory", "old\n")
+        self.commit()
+        self.git("branch", "base")
+        (self.root / "to_file/old.txt").unlink()
+        (self.root / "to_file").rmdir()
+        (self.root / "to_file").write_text("# tst: replacement file\n")
+        (self.root / "to_directory").unlink()
+        (self.root / "to_directory").mkdir()
+        (self.root / "to_directory/new.txt").write_text("# tst: replacement child\n")
+        output = self.root / ".transist" / "context.md"
+        result = self.invoke(output, scope="changed", base_ref="refs/heads/base")
+        self.assertEqual(result["status"], "success")
+        self.assertIn("to_file:1", output.read_text())
+        self.assertIn("to_directory/new.txt:1", output.read_text())
+        self.assertEqual(result["output"]["count"], 2)
+
+    def test_changed_rejects_workspace_inside_worktree(self) -> None:
+        source = self.file("subdir/source.txt", "plain\n")
+        self.commit()
+        self.git("branch", "base")
+        source.write_text("# tst: changed inside workspace\n")
+        output = source.parent / ".transist" / "context.md"
+        output.parent.mkdir()
+        output.write_text("previous")
+        with patch.object(self, "root", source.parent):
+            result = self.invoke(output, scope="changed", base_ref="refs/heads/base")
+        self.assertEqual(result["status"], "failed")
+        self.assertIn("worktree root", result["error"]["message"])
+        self.assertEqual(output.read_text(), "previous")
+
+    def test_changed_rejects_hidden_index_flags(self) -> None:
+        source = self.file("source.txt", "plain\n")
+        self.commit()
+        self.git("branch", "base")
+        output = self.root / ".transist" / "context.md"
+        output.parent.mkdir()
+        output.write_text("previous")
+        for flag in ("assume-unchanged", "skip-worktree"):
+            with self.subTest(flag=flag):
+                self.git("update-index", "--" + flag, "source.txt")
+                source.write_text("# tst: hidden modification\n")
+                result = self.invoke(
+                    output, scope="changed", base_ref="refs/heads/base"
+                )
+                self.assertEqual(result["status"], "failed")
+                self.assertIn(flag, result["error"]["message"])
+                self.assertEqual(output.read_text(), "previous")
+                self.git("update-index", "--no-" + flag, "source.txt")
+
+    def assert_changed_drift_fails(self, mutation: str) -> None:
+        """Change Git state after reading a selected file and preserve prior output."""
+        self.file("source.txt", "original\n")
+        self.commit()
+        self.git("branch", "base")
+        self.file("source.txt", "committed\n")
+        self.commit()
+        (self.root / "source.txt").write_text("# tst: selected\n")
+        output = self.root / ".transist" / "context.md"
+        output.parent.mkdir()
+        output.write_text("previous")
+        original = self.scanner.scan_file
+
+        def scan_and_mutate(*args: object, **kwargs: object) -> list:
+            result = original(*args, **kwargs)
+            if mutation == "head":
+                self.git("add", "source.txt")
+                self.commit()
+            elif mutation == "base":
+                self.git("update-ref", "refs/heads/base", "HEAD")
+            elif mutation == "index":
+                self.git("add", "source.txt")
+            elif mutation == "changes":
+                (self.root / "new.txt").write_text("# tst: missed\n")
+            return result
+
+        with patch.object(self.scanner, "scan_file", side_effect=scan_and_mutate):
+            result = self.invoke(output, scope="changed", base_ref="refs/heads/base")
+        self.assertEqual(result["status"], "failed")
+        self.assertIn("changed", result["error"]["message"])
+        self.assertEqual(output.read_text(), "previous")
+
+    def test_changed_rejects_head_drift(self) -> None:
+        self.assert_changed_drift_fails("head")
+
+    def test_changed_rejects_base_drift(self) -> None:
+        self.assert_changed_drift_fails("base")
+
+    def test_changed_rejects_index_drift(self) -> None:
+        self.assert_changed_drift_fails("index")
+
+    def test_changed_rejects_selected_change_set_drift(self) -> None:
+        self.assert_changed_drift_fails("changes")
+
+    def test_changed_revalidation_uses_original_deadline(self) -> None:
+        self.file("source.txt", "plain\n")
+        self.commit()
+        self.git("branch", "base")
+        output = self.root / ".transist" / "context.md"
+        output.parent.mkdir()
+        output.write_text("previous")
+        clock = [0.0]
+        original = self.scanner.changed_files
+
+        def exhaust_after_snapshot(*args: object, **kwargs: object) -> object:
+            snapshot = original(*args, **kwargs)
+            clock[0] = 61.0
+            return snapshot
+
+        with patch.object(
+            self.scanner.time, "monotonic", side_effect=lambda: clock[0]
+        ), patch.object(
+            self.scanner, "changed_files", side_effect=exhaust_after_snapshot
+        ) as changed:
+            result = self.invoke(output, scope="changed", base_ref="refs/heads/base")
+        self.assertEqual(changed.call_count, 2)
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(output.read_text(), "previous")
+
+    def test_changed_empty_selection_revalidated_before_publication(self) -> None:
+        self.file("source.txt", "plain\n")
+        self.commit()
+        self.git("branch", "base")
+        output = self.root / ".transist" / "context.md"
+        original = self.scanner.changed_files
+        calls = 0
+
+        def add_after_snapshot(*args: object, **kwargs: object) -> object:
+            nonlocal calls
+            snapshot = original(*args, **kwargs)
+            calls += 1
+            if calls == 1:
+                (self.root / "new.txt").write_text("# tst: missed\n")
+            return snapshot
+
+        with patch.object(
+            self.scanner, "changed_files", side_effect=add_after_snapshot
+        ):
+            result = self.invoke(output, scope="changed", base_ref="refs/heads/base")
+        self.assertEqual(result["status"], "failed")
+        self.assertFalse(output.exists())
+
+    def test_changed_git_queries_share_scan_deadline(self) -> None:
+        self.file("source.txt", "plain\n")
+        self.commit()
+        self.git("branch", "base")
+        output = self.root / ".transist" / "context.md"
+        output.parent.mkdir()
+        output.write_text("previous")
+        original = self.scanner.git_output
+        clock = [0.0]
+
+        def timed_git(*args: object, **kwargs: object) -> bytes:
+            result = original(*args, **kwargs)
+            clock[0] += 20
+            return result
+
+        with patch.object(
+            self.scanner.time, "monotonic", side_effect=lambda: clock[0]
+        ), patch.object(self.scanner, "git_output", side_effect=timed_git) as git:
+            result = self.invoke(output, scope="changed", base_ref="refs/heads/base")
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(git.call_count, 4)  # The fourth query never starts a process.
+        self.assertEqual(output.read_text(), "previous")
 
     def test_leading_delimiters_only_and_no_quoted_or_trailing_markers(self) -> None:
         path = self.file(
@@ -90,6 +414,116 @@ class InstructionComments(unittest.TestCase):
                 self.assertEqual(
                     self.scanner.scan_file(self.root, path), [(name, 4, "actual")]
                 )
+
+    def test_custom_marker_preserves_comment_rules_and_tracked_scope(self) -> None:
+        self.file(
+            "source.py",
+            'text = """\n# TODO: quoted\n"""\nx = 1 # TODO: trailing\n'
+            "# TODO: python\n# tst: default marker\n# TODO:   \n",
+        )
+        self.file(
+            "source.js",
+            "const text = `\n// TODO: quoted\n`;\n// toDo: javascript\n"
+            "/* TODO: block */\n/* TODO: trailing */ code();\n",
+        )
+        (self.root / "untracked.txt").write_text("# TODO: untracked\n")
+        output = self.root / "result.md"
+        result = self.invoke(output, "compact", marker="  TODO: ")
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["output"]["count"], 3)
+        self.assertEqual(
+            output.read_text(),
+            "## Inline Reviewer Comments\n\n"
+            "3 comment(s); address each and remove its marker.\n\n"
+            "- `source.js:4` -- javascript\n- `source.js:5` -- block\n"
+            "- `source.py:5` -- python\n",
+        )
+
+    def test_custom_marker_is_literal_and_not_echoed_in_changed_report(self) -> None:
+        self.file("unchanged.txt", "# `[a]+.*` unchanged\n")
+        self.commit()
+        self.git("branch", "base")
+        self.file("selected.txt", "# `aaa` regex lookalike\n# `[A]+.*` selected\n")
+        output = self.root / "result.md"
+        result = self.invoke(
+            output, scope="changed", base_ref="refs/heads/base", marker="`[a]+.*`"
+        )
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["output"]["count"], 1)
+        self.assertEqual(
+            output.read_text(),
+            "## Inline Reviewer Comments\n\n"
+            "1 comment(s); address each and remove its marker.\n\n"
+            "- `selected.txt:2` -- selected\n",
+        )
+
+    def test_custom_marker_cannot_consume_block_terminator(self) -> None:
+        self.file("source.txt", "/* TODO*/ code()\n# TODO*/ comment\n")
+        output = self.root / "result.md"
+        self.assertEqual(self.invoke(output, marker="TODO*/")["output"]["count"], 1)
+        self.assertIn("- `source.txt:2` -- comment", output.read_text())
+        self.assertEqual(self.invoke(output, marker="TODO*")["output"]["count"], 1)
+        self.assertIn("- `source.txt:2` -- / comment", output.read_text())
+
+    def test_default_and_custom_empty_reports(self) -> None:
+        source = self.file("source.txt", "# TsT: request\n")
+        output = self.root / "result.md"
+        self.assertEqual(self.invoke(output)["status"], "success")
+        self.assertEqual(
+            output.read_text(),
+            "## Inline Reviewer Comments (tst:)\n\n"
+            "1 comment(s); address each and remove its marker.\n\n"
+            "- `source.txt:1` -- request\n",
+        )
+        self.assertEqual(self.invoke(output, marker="TODO:")["status"], "success")
+        self.assertEqual(
+            output.read_text(), "## Inline Reviewer Comments\n\nNo comments found.\n"
+        )
+        source.write_text("plain source\n")
+        self.assertEqual(self.invoke(output)["status"], "success")
+        self.assertEqual(
+            output.read_text(),
+            "## Inline Reviewer Comments (tst:)\n\nNo tst: comments found.\n",
+        )
+
+    def test_marker_validation_precedes_scanning_and_preserves_output(self) -> None:
+        schema = json.loads(
+            (ROOT / "schemas/scan_instruction_comments.input.schema.json").read_text()
+        )
+        validate = Draft202012Validator(schema)
+        for marker in ("TODO: ", "`[a]+.*`", "x" * 64):
+            self.assertTrue(validate.is_valid({"output_file": "out", "marker": marker}))
+        output = self.root / "result.md"
+        output.write_text("previous")
+        for markers, message in (
+            ((None, 42), "marker must be a string; omit it to use the default"),
+            (("", "  "), "marker must not be blank; omit it to use the default"),
+            (
+                (
+                    "`[private]`\n",
+                    "TODO\r",
+                    "\tTODO",
+                    "TO\x00DO",
+                    "TO\x85DO",
+                    "TO\u2028DO",
+                ),
+                "marker must be a single line without control characters",
+            ),
+            (("x" * 65,), "marker must be at most 64 characters"),
+        ):
+            for marker in markers:
+                with self.subTest(marker=marker), patch.object(
+                    self.scanner, "scan"
+                ) as scan:
+                    self.assertFalse(
+                        validate.is_valid({"output_file": "out", "marker": marker})
+                    )
+                    result = self.invoke(output, marker=marker)
+                    self.assertEqual(result["status"], "failed")
+                    self.assertEqual(result["error"]["code"], "validation_error")
+                    self.assertEqual(result["error"]["message"], message)
+                    scan.assert_not_called()
+                    self.assertEqual(output.read_text(), "previous")
 
     def test_tracked_operational_files_and_destination_are_excluded(self) -> None:
         for name in (
@@ -347,7 +781,9 @@ class InstructionComments(unittest.TestCase):
     ) -> None:
         path = self.file("deleted.txt", "# tst: obsolete\n")
         path.unlink()
-        self.assertEqual(self.scanner.tracked_files(self.root), [])
+        self.assertEqual(
+            self.scanner.tracked_files(self.root, self.scanner.ScanBudget()), []
+        )
         result = self.invoke(self.root / "result.md")
         self.assertEqual(result["status"], "success")
         self.assertIs(result["output"]["has_comments"], False)

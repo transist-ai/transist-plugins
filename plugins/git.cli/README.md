@@ -2,7 +2,8 @@
 
 ## Managed file data (Transist v0.1.0)
 
-`commit_worktree.summary_file` and `sync_branch_from_pr.pr_file` accept
+`commit_worktree.summary_file`, `sync_branch_from_pr.pr_file` and
+`scan_instruction_comments.pr_file` accept
 runtime-staged absolute document paths. Their resolver also supports allowed
 absolute paths, workspace-relative paths, `repo://` under workspace `.transist/`,
 and invocation-private `run://`. These are data inputs: every Git subprocess
@@ -17,7 +18,7 @@ staged paths and `run://` expire after each invocation. Source/worktree operatio
 remain repository deliverables, with existing compact output/capture/lifecycle
 contracts. Managed documents outside the repository are not staged by `add_all`.
 
-Package version: `0.1.0`.
+Package version: `0.2.0`.
 
 `git.cli` is a narrow `process` plugin for git branch, commit, and push
 operations without exposing a generic shell passthrough.
@@ -25,7 +26,7 @@ operations without exposing a generic shell passthrough.
 ## Runtime Capabilities And Endpoints
 
 - Adapter: `process`.
-- Capability grants: adapter invoke, `plugin:git.cli@0.1.0` load, and the selected action invoke grants.
+- Capability grants: adapter invoke, `plugin:git.cli@0.2.0` load, and the selected action invoke grants.
 
 The manifest requires `python3` and `git` on `PATH`.
 
@@ -47,7 +48,7 @@ stdout/stderr hints; unexpected runner failures return safe `adapter_internal_er
 
 ### `scan_instruction_comments`
 
-Read-only tracked-source scan ported from `scan_tst_comments.py` in both delivery
+Read-only source scan ported from `scan_tst_comments.py` in both delivery
 examples in [`transist-workflows` at `88e6871`](https://github.com/transist-ai/transist-workflows/tree/88e6871cd8155b2d021e8fc1420685b273b7e5ea/examples/hotfix_ticket_delivery/modules/scripts).
 The original helper copies were byte-identical at that historical port checkpoint.
 `instruction_comments.py` is selected in this package; behavioral tests live in
@@ -56,14 +57,41 @@ this action instead of keeping scanner copies. Historical development evidence i
 the [Step 12 record](../../docs/history/revised-workflow-authoring-step-12.md).
 The current public-runtime both-platform gate is [recorded separately](../../docs/validation.md).
 
-Required input: `output_file`; optional `output_mode` and
-`max_diagnostic_bytes`. Output: Boolean `ok`, integer `count`, Boolean
+Required input: `output_file`; optional `scope` (default `tracked`), `base_ref`,
+`pr_file`, `remote`, `marker`, `output_mode` and `max_diagnostic_bytes`. `tracked` forbids
+base inputs. `changed` requires exactly either `base_ref` (a fully qualified
+local Git ref such as `refs/heads/main`) or both `pr_file` and `remote`. The PR
+JSON's `pull_request.baseRefName` maps to the existing local
+`refs/remotes/<remote>/<base>` ref; no fetch is performed. Use a managed document
+read binding for `pr_file`. Invalid, missing or unrelated bases fail closed.
+Both inputs are data, never workspace selectors.
+
+`marker` defaults to `tst:`. To scan `# TODO: fix this`, set `marker: 'TODO:'`.
+The marker is matched literally and case-insensitively; include any desired
+punctuation. Surrounding whitespace is stripped. The input must be at most 64
+characters before trimming; blank, multiline, or control-containing values fail
+before scanning. Custom markers are not echoed in the Markdown report; the
+default retains its original heading and empty-report text.
+
+Changed scope requires the selected workspace to be the canonical Git worktree
+root; a workspace inside a worktree subdirectory fails closed. Changed scope
+scans the full current contents of the union of files changed
+between the merge base and HEAD, staged changes, unstaged changes and nonignored
+untracked files. Renames include their destination; confirmed deletions are
+excluded. Tracked paths marked assume-unchanged or skip-worktree cause changed
+scope to fail; clear the flags before scanning. Before publishing, the scanner
+rechecks HEAD, the base ref, index entries and the selected change sets using the
+same scan deadline; detected drift fails without replacing the output. This is
+best-effort revalidation, not an atomic workspace snapshot: coordinate Git and
+workspace writes throughout the scan and publication, since content can change
+without changing the selected paths or between the final check and publication.
+Unchanged files do not consume source scan budgets. Output: Boolean `ok`, integer `count`, Boolean
 `has_comments`; compact additionally reports diagnostics/byte metrics. The file
 contains the helper's exact located Markdown requests, not an APP envelope.
 There is no model call, usage claim or duplicated context artifact hint.
 
 Source always comes from `paths.workspace_dir`, the canonical runtime-selected
-workspace, using bounded `git ls-files -z` and its Git-confirmed deletions. No
+workspace, using bounded Git enumeration and its Git-confirmed deletions. No
 action input selects a repository. Output is data: staged/allowed absolute paths,
 workspace-relative paths, `repo://` beneath `.transist/`, and invocation-private
 `run://` are supported by the same managed-file resolver. Output cannot widen
@@ -72,7 +100,8 @@ write/update binding for durable handoff; scratch paths expire after dispatch.
 
 Preserved scanner rules:
 
-- Only tracked source; ignore `.transist` components, `*.interaction.json`,
+- In tracked mode only tracked source; in changed mode the selected union above.
+  Ignore `.transist` components, `*.interaction.json`,
   `*.interaction.md`, the output itself, and recognized binary content in an
   8-KiB probe, regardless of extension: NUL, complete raw Netpbm P4/P5/P6 headers
   (positive dimensions, P5/P6 maxval 1–65535), PNG/JPEG/GIF/TIFF, PDF, ZIP,
@@ -80,7 +109,7 @@ Preserved scanner rules:
   and raster bytes are never reviewer requests, even when valid UTF-8.
   Git-confirmed worktree deletions are excluded; unreadable/racing missing files,
   symlink replacements, ancestor links, special files and unsafe names fail.
-- Leading, comment-only, case-insensitive `tst:` after `#`, `//`, `--`, `/*` or
+- Leading, comment-only, case-insensitive marker after `#`, `//`, `--`, `/*` or
   `<!--`; nonempty bodies only. Quoted examples and trailing code are not requests.
   Python uses `tokenize`; the helper's conservative lexical tracking covers
   JS/TS/JSX/TSX/MJS/CJS, Elixir, SQL, Go, Java, Kotlin, C/C++/headers, Ruby and Swift.
@@ -154,7 +183,7 @@ explicit failure rather than a success with dropped fields.
 Safe read-only example:
 
 ```yaml
-plugin: git.cli@0.1.0
+plugin: git.cli@0.2.0
 action: current_branch
 with:
   output_mode: compact
