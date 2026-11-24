@@ -14,7 +14,7 @@ import instruction_comments  # noqa: E402
 
 APP_PROTOCOL = "app.v1"
 PLUGIN_ID = "git.cli"
-PLUGIN_VERSION = "0.1.0"
+PLUGIN_VERSION = "0.2.0"
 ACTIONS = [
     "current_branch",
     "list_branches",
@@ -387,9 +387,57 @@ def handle_action(request: dict) -> dict:
 
         if action == "scan_instruction_comments":
             try:
+                scope = input_payload.get("scope", "tracked")
+                base = input_payload.get("base_ref")
+                pr_file = input_payload.get("pr_file")
+                remote = input_payload.get("remote")
+                if scope == "tracked":
+                    if any(
+                        key in input_payload
+                        for key in ("base_ref", "pr_file", "remote")
+                    ):
+                        raise ValueError("tracked scope does not accept base inputs")
+                elif scope == "changed":
+                    if (
+                        ("base_ref" in input_payload) == ("pr_file" in input_payload)
+                        or ("base_ref" in input_payload and "remote" in input_payload)
+                        or (
+                            "pr_file" in input_payload and "remote" not in input_payload
+                        )
+                    ):
+                        raise ValueError(
+                            "changed scope requires a base ref or PR file and remote"
+                        )
+                    if pr_file:
+                        if (
+                            not isinstance(remote, str)
+                            or not remote
+                            or "/" in remote
+                            or remote.startswith("-")
+                        ):
+                            raise ValueError("invalid remote")
+                        payload = read_json_file(request, pr_file, input_payload)
+                        pull_request = payload.get("pull_request")
+                        branch = (
+                            pull_request.get("baseRefName")
+                            if isinstance(pull_request, dict)
+                            else None
+                        )
+                        if (
+                            not isinstance(branch, str)
+                            or not branch
+                            or branch.startswith(("refs/", "-"))
+                        ):
+                            raise ValueError("invalid PR base branch")
+                        base = f"refs/remotes/{remote}/{branch}"
+                    elif not isinstance(base, str) or not base:
+                        raise ValueError("invalid base ref")
+                else:
+                    raise ValueError("invalid scan scope")
                 output = instruction_comments.scan(
                     Path(request["paths"]["workspace_dir"]),
                     Path(workspace_path(request, input_payload["output_file"])),
+                    base,
                 )
             except instruction_comments.SourceScanError as error:
                 return failed_result(

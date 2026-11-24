@@ -1,6 +1,6 @@
 schema: transist.plugin.v1
 id: git.cli
-version: 0.1.0
+version: 0.2.0
 adapter: process
 entrypoint:
   type: process

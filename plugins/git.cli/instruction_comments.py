@@ -7,6 +7,7 @@ source and the destination are excluded. Exhaustion never publishes a prefix.
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 from pathlib import Path
 import re
 import selectors
@@ -60,6 +61,14 @@ SOURCE_FAILURES = {
     "scan_budget": "aggregate reviewer scan budget exceeded; reduce scan size/duration",
     "comment_budget": "reviewer comment exceeds 4 KiB; shorten the comment",
     "output_budget": "reviewer context exceeds 32 KiB; reduce requests (none dropped)",
+    "hidden_index": (
+        "tracked paths have assume-unchanged or skip-worktree flags; "
+        "clear them before scanning"
+    ),
+    "changed_during_scan": (
+        "Git state changed during reviewer scan; coordinate workspace writes and retry"
+    ),
+    "worktree_root": "changed scope requires the workspace to be the Git worktree root",
 }
 
 
@@ -185,12 +194,13 @@ def open_source(root: Path, path: Path) -> BinaryIO:
     return os.fdopen(fd, "rb")
 
 
-def git_names(repo_root: Path, deleted: bool = False) -> set[str]:
-    """Stream bounded NUL-delimited Git names within the helper's fixed deadline."""
-    command = ["git", "ls-files", "-z", *(["--deleted"] if deleted else [])]
+def git_output(repo_root: Path, arguments: list[str], budget: ScanBudget) -> bytes:
+    """Capture bounded Git output with a fixed deadline and suppressed diagnostics."""
+    command = ["git", *arguments]
     output = bytearray()
     entries = 0
-    deadline = time.monotonic() + GIT_TIMEOUT_SECONDS
+    budget.check()
+    deadline = min(time.monotonic() + GIT_TIMEOUT_SECONDS, budget.deadline)
     process = subprocess.Popen(
         command, cwd=repo_root, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
     )
@@ -213,6 +223,7 @@ def git_names(repo_root: Path, deleted: bool = False) -> set[str]:
                 if len(output) > MAX_GIT_OUTPUT_BYTES or entries > MAX_FILES:
                     raise ValueError("Git filename enumeration exceeds scan budget")
         process.wait(timeout=max(0.001, deadline - time.monotonic()))
+        budget.check()
         if process.returncode:
             raise subprocess.CalledProcessError(process.returncode, command)
     finally:
@@ -222,6 +233,21 @@ def git_names(repo_root: Path, deleted: bool = False) -> set[str]:
                 process.wait(timeout=5)
         finally:
             process.stdout.close()
+    return bytes(output)
+
+
+def git_names(
+    repo_root: Path,
+    budget: ScanBudget,
+    deleted: bool = False,
+    arguments: list[str] | None = None,
+) -> set[str]:
+    """Read and validate bounded NUL-delimited repository-relative Git paths."""
+    output = git_output(
+        repo_root,
+        arguments or ["ls-files", "-z", *(["--deleted"] if deleted else [])],
+        budget,
+    )
     if output and not output.endswith(b"\0"):
         raise ValueError("incomplete Git filename enumeration")
     names: set[str] = set()
@@ -237,6 +263,140 @@ def git_names(repo_root: Path, deleted: bool = False) -> set[str]:
     return names
 
 
+@dataclass(frozen=True)
+class ChangedSnapshot:
+    """Capture selected paths and Git identities for best-effort revalidation."""
+
+    paths: tuple[Path, ...]
+    head: str
+    base: str
+    index: bytes
+    changes: tuple[frozenset[str], ...]
+
+
+def changed_files(
+    repo_root: Path, base_ref: str, budget: ScanBudget
+) -> ChangedSnapshot:
+    """Select current files changed since the merge base or in the worktree."""
+    if not isinstance(base_ref, str) or not base_ref.startswith("refs/"):
+        raise ValueError("base must be a fully qualified ref")
+    top = git_output(repo_root, ["rev-parse", "--show-toplevel"], budget)
+    if not top.endswith(b"\n"):
+        raise SourceScanError(None, "worktree_root")
+    top_path = Path(os.fsdecode(top[:-1]))
+    if not top_path.is_absolute() or top_path.resolve(strict=True) != repo_root.resolve(
+        strict=True
+    ):
+        raise SourceScanError(None, "worktree_root")
+    git_output(repo_root, ["check-ref-format", base_ref], budget)
+    commit = (
+        git_output(
+            repo_root,
+            ["rev-parse", "--verify", "--end-of-options", base_ref + "^{commit}"],
+            budget,
+        )
+        .strip()
+        .decode("ascii")
+    )
+    if not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", commit):
+        raise ValueError("invalid base commit")
+    head = (
+        git_output(repo_root, ["rev-parse", "--verify", "HEAD^{commit}"], budget)
+        .strip()
+        .decode("ascii")
+    )
+    if not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", head):
+        raise ValueError("invalid HEAD commit")
+    flags = git_output(repo_root, ["ls-files", "-v", "-z"], budget)
+    if flags and not flags.endswith(b"\0"):
+        raise ValueError("incomplete Git index flags")
+    for entry in flags.split(b"\0"):
+        if not entry:
+            continue
+        if len(entry) < 3 or entry[1:2] != b" ":
+            raise ValueError("invalid Git index flags")
+        if entry[:1] == b"S" or entry[:1].islower():
+            raise SourceScanError(None, "hidden_index")
+    index = git_output(repo_root, ["ls-files", "--stage", "-z"], budget)
+    merge = (
+        git_output(repo_root, ["merge-base", head, commit], budget)
+        .strip()
+        .decode("ascii")
+    )
+    if not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", merge):
+        raise ValueError("invalid merge base")
+    diffs = [
+        [
+            "diff",
+            "--no-ext-diff",
+            "--no-textconv",
+            "--no-renames",
+            "--name-only",
+            "-z",
+            merge,
+            head,
+            "--",
+        ],
+        [
+            "diff",
+            "--no-ext-diff",
+            "--no-textconv",
+            "--no-renames",
+            "--name-only",
+            "-z",
+            "--cached",
+            "--",
+        ],
+        [
+            "diff",
+            "--no-ext-diff",
+            "--no-textconv",
+            "--no-renames",
+            "--name-only",
+            "-z",
+            "--",
+        ],
+    ]
+    names: set[str] = set()
+    deleted: set[str] = set()
+    changes: list[frozenset[str]] = []
+    for args in diffs:
+        selected = git_names(repo_root, budget, arguments=args)
+        removed = git_names(
+            repo_root, budget, arguments=args[:-1] + ["--diff-filter=D", "--"]
+        )
+        names.update(selected)
+        deleted.update(removed)
+        changes.extend((frozenset(selected), frozenset(removed)))
+    untracked = git_names(
+        repo_root,
+        budget,
+        arguments=["ls-files", "--others", "--exclude-standard", "-z"],
+    )
+    names.update(untracked)
+    changes.append(frozenset(untracked))
+    if (
+        len(names) > MAX_FILES
+        or sum(len(n.encode("utf-8")) + 1 for n in names) > MAX_GIT_OUTPUT_BYTES
+    ):
+        raise ValueError("Git filename enumeration exceeds scan budget")
+    paths = []
+    for name in sorted(names):
+        budget.check()
+        relative = Path(name)
+        if operational(relative):
+            continue
+        path = repo_root / relative
+        if name in deleted:
+            try:
+                if confirmed_missing(repo_root, path):
+                    continue
+            except OSError:
+                raise SourceScanError(relative, "unreadable_source") from None
+        paths.append(path)
+    return ChangedSnapshot(tuple(paths), head, commit, index, tuple(changes))
+
+
 def confirmed_missing(repo_root: Path, path: Path) -> bool:
     """Exclude pinned-parent Git-confirmed deletions, never symlink replacements."""
     relative = path.relative_to(repo_root)
@@ -248,6 +408,11 @@ def confirmed_missing(repo_root: Path, path: Path) -> bool:
                 child = os.open(part, flags, dir_fd=fd)
             except FileNotFoundError:
                 return True
+            except NotADirectoryError:
+                mode = os.stat(part, dir_fd=fd, follow_symlinks=False).st_mode
+                if stat.S_ISREG(mode):
+                    return True
+                raise SourceScanError(relative, "unsafe_source") from None
             os.close(fd)
             fd = child
         try:
@@ -256,17 +421,18 @@ def confirmed_missing(repo_root: Path, path: Path) -> bool:
             return True
         if stat.S_ISLNK(mode):
             raise SourceScanError(relative, "unsafe_source")
-        return False
+        return stat.S_ISDIR(mode)
     finally:
         os.close(fd)
 
 
-def tracked_files(repo_root: Path) -> list[Path]:
+def tracked_files(repo_root: Path, budget: ScanBudget) -> list[Path]:
     """Enumerate sorted tracked source; a later disappearance remains fatal."""
-    tracked = git_names(repo_root)
-    deleted = git_names(repo_root, deleted=True)
+    tracked = git_names(repo_root, budget)
+    deleted = git_names(repo_root, budget, deleted=True)
     paths = []
     for name in sorted(tracked):
+        budget.check()
         relative = Path(name)
         path = repo_root / relative
         if operational(relative):
@@ -486,17 +652,21 @@ def write_output(output_path: Path, hits: list[tuple[str, int, str]]) -> None:
         os.close(parent)
 
 
-def scan(root: Path, output: Path) -> dict:
+def scan(root: Path, output: Path, base_ref: str | None = None) -> dict:
     """Scan the runtime-selected canonical workspace; output is data, not authority."""
     directory = open_directory(root)
     os.close(directory)
     hits: list[tuple[str, int, str]] = []
     budget = ScanBudget()
-    for tracked in tracked_files(root):
+    snapshot = None if base_ref is None else changed_files(root, base_ref, budget)
+    paths = tracked_files(root, budget) if snapshot is None else snapshot.paths
+    for tracked in paths:
         if tracked == output or operational(tracked.relative_to(root)):
             continue
         hits.extend(scan_file(root, tracked, budget))
         render_output(hits)
+    if snapshot is not None and snapshot != changed_files(root, base_ref, budget):
+        raise SourceScanError(None, "changed_during_scan")
     budget.check()
     write_output(output, hits)
     return {"ok": True, "count": len(hits), "has_comments": bool(hits)}
