@@ -386,6 +386,11 @@ def handle_action(request: dict) -> dict:
         input_payload = request.get("input") or {}
 
         if action == "scan_instruction_comments":
+            marker = (
+                instruction_comments.CommentMarker(input_payload["marker"])
+                if "marker" in input_payload
+                else instruction_comments.DEFAULT_COMMENT_MARKER
+            )
             try:
                 scope = input_payload.get("scope", "tracked")
                 base = input_payload.get("base_ref")
@@ -438,6 +443,7 @@ def handle_action(request: dict) -> dict:
                     Path(request["paths"]["workspace_dir"]),
                     Path(workspace_path(request, input_payload["output_file"])),
                     base,
+                    marker=marker,
                 )
             except instruction_comments.SourceScanError as error:
                 return failed_result(

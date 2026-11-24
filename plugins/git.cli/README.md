@@ -58,13 +58,20 @@ the [Step 12 record](../../docs/history/revised-workflow-authoring-step-12.md).
 The current public-runtime both-platform gate is [recorded separately](../../docs/validation.md).
 
 Required input: `output_file`; optional `scope` (default `tracked`), `base_ref`,
-`pr_file`, `remote`, `output_mode` and `max_diagnostic_bytes`. `tracked` forbids
+`pr_file`, `remote`, `marker`, `output_mode` and `max_diagnostic_bytes`. `tracked` forbids
 base inputs. `changed` requires exactly either `base_ref` (a fully qualified
 local Git ref such as `refs/heads/main`) or both `pr_file` and `remote`. The PR
 JSON's `pull_request.baseRefName` maps to the existing local
 `refs/remotes/<remote>/<base>` ref; no fetch is performed. Use a managed document
 read binding for `pr_file`. Invalid, missing or unrelated bases fail closed.
 Both inputs are data, never workspace selectors.
+
+`marker` defaults to `tst:`. To scan `# TODO: fix this`, set `marker: 'TODO:'`.
+The marker is matched literally and case-insensitively; include any desired
+punctuation. Surrounding whitespace is stripped. The input must be at most 64
+characters before trimming; blank, multiline, or control-containing values fail
+before scanning. Custom markers are not echoed in the Markdown report; the
+default retains its original heading and empty-report text.
 
 Changed scope requires the selected workspace to be the canonical Git worktree
 root; a workspace inside a worktree subdirectory fails closed. Changed scope
@@ -102,7 +109,7 @@ Preserved scanner rules:
   and raster bytes are never reviewer requests, even when valid UTF-8.
   Git-confirmed worktree deletions are excluded; unreadable/racing missing files,
   symlink replacements, ancestor links, special files and unsafe names fail.
-- Leading, comment-only, case-insensitive `tst:` after `#`, `//`, `--`, `/*` or
+- Leading, comment-only, case-insensitive marker after `#`, `//`, `--`, `/*` or
   `<!--`; nonempty bodies only. Quoted examples and trailing code are not requests.
   Python uses `tokenize`; the helper's conservative lexical tracking covers
   JS/TS/JSX/TSX/MJS/CJS, Elixir, SQL, Go, Java, Kotlin, C/C++/headers, Ruby and Swift.

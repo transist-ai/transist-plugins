@@ -12,6 +12,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from jsonschema import Draft202012Validator
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT.parents[1] / "tests"))
 import support  # noqa: E402
@@ -52,7 +54,7 @@ class InstructionComments(unittest.TestCase):
         self.git("add", "-f", "--", name)
         return path
 
-    def invoke(self, output: Path, mode: str = "legacy", **inputs: str) -> dict:
+    def invoke(self, output: Path, mode: str = "legacy", **inputs: object) -> dict:
         """Invoke actual APP handling and validate native decision/output schemas."""
         request = support.app_invoke_request(
             "scan_instruction_comments",
@@ -155,8 +157,6 @@ class InstructionComments(unittest.TestCase):
         schema = json.loads(
             (ROOT / "schemas/scan_instruction_comments.input.schema.json").read_text()
         )
-        from jsonschema import Draft202012Validator
-
         validate = Draft202012Validator(schema)
         for inputs in (
             {},
@@ -414,6 +414,116 @@ class InstructionComments(unittest.TestCase):
                 self.assertEqual(
                     self.scanner.scan_file(self.root, path), [(name, 4, "actual")]
                 )
+
+    def test_custom_marker_preserves_comment_rules_and_tracked_scope(self) -> None:
+        self.file(
+            "source.py",
+            'text = """\n# TODO: quoted\n"""\nx = 1 # TODO: trailing\n'
+            "# TODO: python\n# tst: default marker\n# TODO:   \n",
+        )
+        self.file(
+            "source.js",
+            "const text = `\n// TODO: quoted\n`;\n// toDo: javascript\n"
+            "/* TODO: block */\n/* TODO: trailing */ code();\n",
+        )
+        (self.root / "untracked.txt").write_text("# TODO: untracked\n")
+        output = self.root / "result.md"
+        result = self.invoke(output, "compact", marker="  TODO: ")
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["output"]["count"], 3)
+        self.assertEqual(
+            output.read_text(),
+            "## Inline Reviewer Comments\n\n"
+            "3 comment(s); address each and remove its marker.\n\n"
+            "- `source.js:4` -- javascript\n- `source.js:5` -- block\n"
+            "- `source.py:5` -- python\n",
+        )
+
+    def test_custom_marker_is_literal_and_not_echoed_in_changed_report(self) -> None:
+        self.file("unchanged.txt", "# `[a]+.*` unchanged\n")
+        self.commit()
+        self.git("branch", "base")
+        self.file("selected.txt", "# `aaa` regex lookalike\n# `[A]+.*` selected\n")
+        output = self.root / "result.md"
+        result = self.invoke(
+            output, scope="changed", base_ref="refs/heads/base", marker="`[a]+.*`"
+        )
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["output"]["count"], 1)
+        self.assertEqual(
+            output.read_text(),
+            "## Inline Reviewer Comments\n\n"
+            "1 comment(s); address each and remove its marker.\n\n"
+            "- `selected.txt:2` -- selected\n",
+        )
+
+    def test_custom_marker_cannot_consume_block_terminator(self) -> None:
+        self.file("source.txt", "/* TODO*/ code()\n# TODO*/ comment\n")
+        output = self.root / "result.md"
+        self.assertEqual(self.invoke(output, marker="TODO*/")["output"]["count"], 1)
+        self.assertIn("- `source.txt:2` -- comment", output.read_text())
+        self.assertEqual(self.invoke(output, marker="TODO*")["output"]["count"], 1)
+        self.assertIn("- `source.txt:2` -- / comment", output.read_text())
+
+    def test_default_and_custom_empty_reports(self) -> None:
+        source = self.file("source.txt", "# TsT: request\n")
+        output = self.root / "result.md"
+        self.assertEqual(self.invoke(output)["status"], "success")
+        self.assertEqual(
+            output.read_text(),
+            "## Inline Reviewer Comments (tst:)\n\n"
+            "1 comment(s); address each and remove its marker.\n\n"
+            "- `source.txt:1` -- request\n",
+        )
+        self.assertEqual(self.invoke(output, marker="TODO:")["status"], "success")
+        self.assertEqual(
+            output.read_text(), "## Inline Reviewer Comments\n\nNo comments found.\n"
+        )
+        source.write_text("plain source\n")
+        self.assertEqual(self.invoke(output)["status"], "success")
+        self.assertEqual(
+            output.read_text(),
+            "## Inline Reviewer Comments (tst:)\n\nNo tst: comments found.\n",
+        )
+
+    def test_marker_validation_precedes_scanning_and_preserves_output(self) -> None:
+        schema = json.loads(
+            (ROOT / "schemas/scan_instruction_comments.input.schema.json").read_text()
+        )
+        validate = Draft202012Validator(schema)
+        for marker in ("TODO: ", "`[a]+.*`", "x" * 64):
+            self.assertTrue(validate.is_valid({"output_file": "out", "marker": marker}))
+        output = self.root / "result.md"
+        output.write_text("previous")
+        for markers, message in (
+            ((None, 42), "marker must be a string; omit it to use the default"),
+            (("", "  "), "marker must not be blank; omit it to use the default"),
+            (
+                (
+                    "`[private]`\n",
+                    "TODO\r",
+                    "\tTODO",
+                    "TO\x00DO",
+                    "TO\x85DO",
+                    "TO\u2028DO",
+                ),
+                "marker must be a single line without control characters",
+            ),
+            (("x" * 65,), "marker must be at most 64 characters"),
+        ):
+            for marker in markers:
+                with self.subTest(marker=marker), patch.object(
+                    self.scanner, "scan"
+                ) as scan:
+                    self.assertFalse(
+                        validate.is_valid({"output_file": "out", "marker": marker})
+                    )
+                    result = self.invoke(output, marker=marker)
+                    self.assertEqual(result["status"], "failed")
+                    self.assertEqual(result["error"]["code"], "validation_error")
+                    self.assertEqual(result["error"]["message"], message)
+                    scan.assert_not_called()
+                    self.assertEqual(output.read_text(), "previous")
 
     def test_tracked_operational_files_and_destination_are_excluded(self) -> None:
         for name in (
