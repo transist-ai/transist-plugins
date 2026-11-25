@@ -32,18 +32,34 @@ class MainDcoTests(unittest.TestCase):
 
     def git(self, *args: str) -> str:
         return subprocess.check_output(
-            ["git", "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false", *args],
-            cwd=self.root, env=self.env, text=True, stderr=subprocess.PIPE,
+            [
+                "git",
+                "-c",
+                "core.hooksPath=/dev/null",
+                "-c",
+                "commit.gpgsign=false",
+                *args,
+            ],
+            cwd=self.root,
+            env=self.env,
+            text=True,
+            stderr=subprocess.PIPE,
         ).strip()
 
     def commit(self, message: str) -> str:
         self.git("commit", "-q", "--allow-empty", "-m", message)
         return self.git("rev-parse", "HEAD")
 
-    def check(self, before: str, after: str, env: dict | None = None) -> subprocess.CompletedProcess:
+    def check(
+        self, before: str, after: str, env: dict | None = None
+    ) -> subprocess.CompletedProcess:
         return subprocess.run(
-            ["bash", str(SCRIPT), before, after], cwd=self.root,
-            env=env or self.env, text=True, capture_output=True, timeout=10,
+            ["bash", str(SCRIPT), before, after],
+            cwd=self.root,
+            env=env or self.env,
+            text=True,
+            capture_output=True,
+            timeout=10,
         )
 
     def test_signed_squash_excludes_unsigned_before(self) -> None:
@@ -89,11 +105,16 @@ class MainDcoTests(unittest.TestCase):
         after = self.commit("feature\n\n" + SIGNED)
         blob = self.git("hash-object", "-w", "--stdin")
         for before, end in (
-            ("0" * 40, after), (self.base, "0" * 40),
-            ("HEAD", after), (self.base[:8], after),
-            ("f" * 40, after), (self.base, "f" * 40),
-            (blob, after), (self.base, blob),
-            (self.base, self.base), (after, self.base),
+            ("0" * 40, after),
+            (self.base, "0" * 40),
+            ("HEAD", after),
+            (self.base[:8], after),
+            ("f" * 40, after),
+            (self.base, "f" * 40),
+            (blob, after),
+            (self.base, blob),
+            (self.base, self.base),
+            (after, self.base),
         ):
             with self.subTest(before=before, after=end):
                 self.assertNotEqual(self.check(before, end).returncode, 0)
@@ -110,11 +131,16 @@ class MainDcoTests(unittest.TestCase):
         for command in ("rev-list", "show", "interpret-trailers"):
             with self.subTest(command=command):
                 stub.write_text(
-                    f'#!/bin/sh\nif [ "$1" = "{command}" ]; then exit 43; fi\nexec "{executable}" "$@"\n',
+                    f'#!/bin/sh\nif [ "$1" = "{command}" ]; then exit 43; fi\n'
+                    f'exec "{executable}" "$@"\n',
                     encoding="utf-8",
                 )
                 stub.chmod(0o755)
-                result = self.check(self.base, after, dict(self.env, PATH=str(bin_dir) + os.pathsep + self.env["PATH"]))
+                result = self.check(
+                    self.base,
+                    after,
+                    dict(self.env, PATH=str(bin_dir) + os.pathsep + self.env["PATH"]),
+                )
                 self.assertNotEqual(result.returncode, 0)
                 self.assertNotIn("DCO check passed", result.stdout)
 
