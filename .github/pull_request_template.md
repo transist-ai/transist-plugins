@@ -51,6 +51,5 @@ Describe any plugin id, action, schema, workflow, or contributor-facing impact.
 
 ## DCO
 
-- [ ] Every commit includes a `Signed-off-by:` line (`git commit -s`)
 - [ ] I have the right to submit this contribution under Apache-2.0
 - [ ] Vendored MPL-2.0 contract licenses and upstream attribution are retained when affected

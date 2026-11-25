@@ -190,12 +190,25 @@ provider secrets.
 
 ## Pull requests and DCO
 
-Use the PR template and list exact validation evidence and pending checks. Every
-commit needs `Signed-off-by:` (for example, `git commit -s`). Contributions are
-accepted under the [Developer Certificate of Origin](https://developercertificate.org/):
+Use the PR template and list exact validation evidence and pending checks.
+Contributions are accepted under the [Developer Certificate of Origin](https://developercertificate.org/):
 you certify that you wrote the contribution or have the right to submit it and
 agree it may be distributed under Apache-2.0. Maintainer status does not replace
 sign-off or ownership review.
+
+Each new squash commit on `main` must contain at least one genuine
+`Signed-off-by: Name <email>` trailer. Feature branch commits need not be signed
+and no PR-body attestation or pre-merge squash is required. In GitHub's normal
+**Squash and merge** dialog, the human merger reviews the final message, retains
+existing genuine trailers, and adds their own if none is valid and they can attest
+to the DCO. Never invent a sign-off or sign for someone else; the same applies to
+bot-authored PRs. The `main-dco` check validates new commits after they land, not
+before merge, and checks format and presence rather than identity or rights. If it
+fails, stop further merges and notify a maintainer with the failing SHA and run URL;
+do not force-push `main` or assume a later sign-off repairs the failure.
+
+During the staged rollout, existing live GitHub protections remain in force until
+an authorized administrator completes the cutover. See the [ruleset rollout](.github/rulesets/README.md).
 
 For publishing to a fresh public repository, follow the small-step
 [publication checklist](docs/publication.md). Current-file checks neither
